@@ -1,0 +1,138 @@
+<div class="mx-auto max-w-5xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
+  <a routerLink="/" class="btn btn-ghost btn-sm gap-2 mb-4">
+    <ng-icon name="lucideArrowLeft" size="18"></ng-icon>
+    Back to discovery
+  </a>
+
+  @if (loading()) {
+    <div class="flex flex-col items-center justify-center gap-3 py-20">
+      <span class="loading loading-spinner loading-lg text-primary"></span>
+      <p class="text-sm opacity-70">Building your estimate…</p>
+    </div>
+  } @else if (error()) {
+    <div role="alert" class="alert alert-error">
+      <ng-icon name="lucideCircleAlert" size="20"></ng-icon>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (estimate(); as e) {
+    <div class="card bg-primary text-primary-content shadow-lg mb-6">
+      <div class="card-body gap-2 p-5 sm:p-7">
+        <div class="flex flex-wrap items-center gap-2">
+          <ng-icon name="lucideRoute" size="20"></ng-icon>
+          <span class="text-sm opacity-80">Trip estimate</span>
+          <span class="badge {{ fitBadge(e.budgetFit) }} badge-sm">{{ e.budgetFit }}</span>
+        </div>
+        <h1 class="text-2xl sm:text-3xl font-bold">{{ e.origin }} → {{ e.destination }}</h1>
+        <p class="opacity-90 text-sm sm:text-base">
+          {{ e.days }} days · {{ e.nights }} nights
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-3 mb-8">
+      <div class="stat bg-base-100 border border-base-300 rounded-box shadow-sm">
+        <div class="stat-title">Low</div>
+        <div class="stat-value text-2xl sm:text-3xl">${{ e.total.min | number: '1.0-0' }}</div>
+      </div>
+      <div class="stat bg-base-100 border-2 border-primary rounded-box shadow-sm">
+        <div class="stat-title text-primary">Typical</div>
+        <div class="stat-value text-2xl sm:text-3xl text-primary">${{ e.total.typical | number: '1.0-0' }}</div>
+      </div>
+      <div class="stat bg-base-100 border border-base-300 rounded-box shadow-sm">
+        <div class="stat-title">High</div>
+        <div class="stat-value text-2xl sm:text-3xl">${{ e.total.max | number: '1.0-0' }}</div>
+      </div>
+    </div>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+        <ng-icon name="lucidePiggyBank" size="22" class="text-primary"></ng-icon>
+        Cost breakdown
+      </h2>
+      <div class="overflow-x-auto rounded-box border border-base-300 bg-base-100">
+        <table class="table table-zebra table-sm sm:table-md">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Low</th>
+              <th>Typical</th>
+              <th>High</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (line of e.breakdown; track line.category) {
+              <tr>
+                <td class="font-medium">{{ line.category }}</td>
+                <td>${{ line.min | number: '1.0-0' }}</td>
+                <td>${{ line.typical | number: '1.0-0' }}</td>
+                <td>${{ line.max | number: '1.0-0' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+        <ng-icon name="lucideInfo" size="22" class="text-primary"></ng-icon>
+        Why this plan
+      </h2>
+      <ul class="space-y-2">
+        @for (r of e.reasons; track r) {
+          <li class="flex gap-2 rounded-box bg-base-100 border border-base-300 px-4 py-3 text-sm">
+            <span class="text-primary">•</span>
+            <span>{{ r }}</span>
+          </li>
+        }
+      </ul>
+    </section>
+
+    <section class="mb-8">
+      <h2 class="text-xl font-bold mb-3 flex items-center gap-2">
+        <ng-icon name="lucideClipboardList" size="22" class="text-primary"></ng-icon>
+        Day-by-day itinerary
+      </h2>
+      <div class="space-y-4">
+        @for (day of days(e); track day) {
+          <div class="collapse collapse-arrow bg-base-100 border border-base-300">
+            <input type="checkbox" [checked]="day === 1" />
+            <div class="collapse-title font-semibold flex items-center gap-2">
+              <ng-icon name="lucideMapPinned" size="18" class="text-primary"></ng-icon>
+              Day {{ day }}
+            </div>
+            <div class="collapse-content">
+              <ul class="space-y-3 pt-1">
+                @for (item of dayItems(e, day); track item.title) {
+                  <li class="rounded-lg bg-base-200/60 p-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <p class="font-medium">{{ item.title }}</p>
+                      @if (item.isOptional) {
+                        <span class="badge badge-outline badge-sm">optional</span>
+                      }
+                    </div>
+                    <p class="text-sm opacity-70 mt-1">
+                      {{ item.category }} · {{ item.durationMinutes }} min · ${{ item.estimatedCost | number: '1.0-0' }}
+                    </p>
+                  </li>
+                }
+              </ul>
+            </div>
+          </div>
+        }
+      </div>
+    </section>
+
+    <section>
+      <h2 class="text-xl font-bold mb-3">Assumptions</h2>
+      <div class="alert alert-info alert-soft">
+        <ng-icon name="lucideInfo" size="20"></ng-icon>
+        <ul class="list-disc pl-4 text-sm space-y-1">
+          @for (a of e.assumptions; track a) {
+            <li>{{ a }}</li>
+          }
+        </ul>
+      </div>
+    </section>
+  }
+</div>

@@ -1,0 +1,14 @@
+**/.git
+**/.gitignore
+**/bin
+**/obj
+**/node_modules
+**/dist
+**/.angular
+**/.vs
+**/*.user
+**/Dockerfile*
+**/.dockerignore
+**/database
+**/*.md
+**/.cursor
