@@ -1,6 +1,8 @@
 using Serilog;
+using Microsoft.EntityFrameworkCore;
 using TripPlatform.Application;
 using TripPlatform.Infrastructure;
+using TripPlatform.Infrastructure.Persistence;
 using TripPlatform.Infrastructure.Persistence.Seed;
 
 Log.Logger = new LoggerConfiguration()
@@ -42,6 +44,13 @@ try
 
     using (var scope = app.Services.CreateScope())
     {
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+        var provider = app.Configuration.GetValue<string>("Database:Provider") ?? "InMemory";
+        if (!provider.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
+        {
+            await db.Database.EnsureCreatedAsync();
+        }
+
         var seeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();
         await seeder.SeedAsync();
     }
@@ -55,7 +64,12 @@ try
     app.UseStaticFiles();
     app.UseAuthorization();
     app.MapControllers();
-    app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "TripPlatform.API" }));
+    app.MapGet("/health", () => Results.Ok(new
+    {
+        status = "healthy",
+        service = "TripPlatform.API",
+        database = app.Configuration.GetValue<string>("Database:Provider") ?? "InMemory"
+    }));
     app.MapFallbackToFile("index.html");
 
     app.Run();

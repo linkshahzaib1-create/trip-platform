@@ -1,0 +1,91 @@
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <a routerLink="/" class="inline-flex items-center gap-2 text-sm font-medium text-brand mb-4">
+    <ng-icon name="lucideArrowLeft" size="16"></ng-icon>
+    Back to destinations
+  </a>
+
+  @if (loading()) {
+    <div class="flex justify-center py-20">
+      <span class="loading loading-spinner loading-lg text-brand"></span>
+    </div>
+  } @else if (error()) {
+    <div role="alert" class="alert alert-error">
+      <ng-icon name="lucideCircleAlert" size="20"></ng-icon>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (profile(); as p) {
+    <div class="h-48 sm:h-64 rounded-xl bg-gradient-to-br from-sky-200 via-orange-100 to-emerald-100 mb-6 flex items-end p-6">
+      <div>
+        <p class="text-sm uppercase tracking-wide text-muted flex items-center gap-1">
+          <ng-icon name="lucideMapPin" size="14"></ng-icon>
+          {{ p.country }}@if (p.region) { · {{ p.region }} }
+        </p>
+        <h1 class="text-3xl sm:text-4xl font-bold text-ink">{{ p.name }}</h1>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div class="lg:col-span-2 space-y-6">
+        <section id="ts-tour-overview" class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+          <h2 class="text-xl font-bold mb-3">Overview</h2>
+          <p class="text-muted leading-relaxed">
+            {{ p.description || ('Discover ' + p.name + ' with a personalized itinerary based on your travel party.') }}
+            Our planner balances sightseeing, food, and pacing for your group size — including child-friendly options when kids are traveling.
+          </p>
+        </section>
+
+        <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+          <h2 class="text-xl font-bold mb-4">Things to do</h2>
+          <div class="space-y-3">
+            @for (a of p.attractions; track a.name) {
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-base-200 pb-3">
+                <div>
+                  <p class="font-medium">{{ a.name }}</p>
+                  <p class="text-sm text-muted">{{ a.category }} · {{ a.durationMinutes }} min</p>
+                </div>
+                <div class="text-sm text-muted">
+                  From ${{ a.entryCostTypical | number: '1.0-0' }}
+                  · Family {{ a.familyScore }}/5
+                </div>
+              </div>
+            } @empty {
+              <p class="text-muted">Attractions will appear as this destination is enriched.</p>
+            }
+          </div>
+        </section>
+      </div>
+
+      <aside class="space-y-4">
+        <div class="bg-panel rounded-xl p-5 border border-base-300">
+          <h3 class="font-bold text-lg mb-3">Highlights</h3>
+          <ul class="space-y-2">
+            @for (h of p.highlights; track h) {
+              <li class="flex gap-2 text-sm">
+                <ng-icon name="lucideCheck" size="16" class="text-ok mt-0.5 shrink-0"></ng-icon>
+                <span>{{ h }}</span>
+              </li>
+            }
+          </ul>
+        </div>
+
+        <div class="bg-white rounded-xl p-5 border border-base-300">
+          <h3 class="font-bold mb-3">Suitability scores</h3>
+          <dl class="space-y-2 text-sm">
+            <div class="flex justify-between"><dt>Family</dt><dd class="font-semibold">{{ p.familyFriendlyScore }}</dd></div>
+            <div class="flex justify-between"><dt>Couples</dt><dd class="font-semibold">{{ p.coupleScore }}</dd></div>
+            <div class="flex justify-between"><dt>Romance</dt><dd class="font-semibold">{{ p.romanceScore }}</dd></div>
+            <div class="flex justify-between"><dt>Culture</dt><dd class="font-semibold">{{ p.cultureScore }}</dd></div>
+            <div class="flex justify-between"><dt>Adventure</dt><dd class="font-semibold">{{ p.adventureScore }}</dd></div>
+          </dl>
+          <a
+            class="btn w-full mt-4 border-0 text-white bg-brand hover:bg-brand-dark"
+            [routerLink]="['/results']"
+            [queryParams]="estimateLink(p)"
+          >
+            Get trip estimate
+          </a>
+        </div>
+      </aside>
+    </div>
+  }
+</div>

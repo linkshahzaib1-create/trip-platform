@@ -14,7 +14,9 @@ public sealed record RecommendDestinationsCommand(
     string Origin,
     DateOnly StartDate,
     DateOnly EndDate,
-    IReadOnlyList<TravelerAgeDto> Travelers,
+    int Adults,
+    IReadOnlyList<int>? ChildAges,
+    IReadOnlyList<TravelerAgeDto>? Travelers,
     decimal Budget,
     string Currency,
     string TravelerCategory,
@@ -25,17 +27,25 @@ public sealed record RecommendationDto(
     string Destination,
     string Slug,
     int DestinationId,
+    string Country,
+    string Description,
     CostRangeDto EstimatedCost,
     string TravelTime,
     string TravelModes,
     string BudgetFit,
     string SuitableFor,
     string Bucket,
+    bool FamilyFriendly,
+    int FamilyScore,
+    IReadOnlyList<string> Highlights,
     IReadOnlyList<string> Reasons,
     int Score);
 
 public sealed record RecommendDestinationsResponse(
     string Origin,
+    int Adults,
+    int Children,
+    IReadOnlyList<int> ChildAges,
     IReadOnlyList<RecommendationDto> Recommendations);
 
 public sealed class RecommendDestinationsCommandValidator : AbstractValidator<RecommendDestinationsCommand>
@@ -45,8 +55,8 @@ public sealed class RecommendDestinationsCommandValidator : AbstractValidator<Re
         RuleFor(x => x.Origin).NotEmpty().MaximumLength(100);
         RuleFor(x => x.Budget).GreaterThan(0);
         RuleFor(x => x.EndDate).GreaterThanOrEqualTo(x => x.StartDate);
-        RuleFor(x => x.Travelers).NotEmpty();
-        RuleForEach(x => x.Travelers).ChildRules(t => t.RuleFor(a => a.Age).InclusiveBetween(0, 120));
+        RuleFor(x => x.Adults).GreaterThanOrEqualTo(1).When(x => x.Travelers is null || x.Travelers.Count == 0);
+        RuleForEach(x => x.ChildAges).InclusiveBetween(0, 17);
     }
 }
 
@@ -61,6 +71,9 @@ public sealed class RecommendDestinationsCommandHandler
         RecommendDestinationsCommand request,
         CancellationToken cancellationToken)
     {
+        var childAges = request.ChildAges?.Where(a => a >= 0 && a < 18).ToList() ?? new List<int>();
+        var travelers = BuildTravelers(request.Adults, childAges, request.Travelers);
+
         var origin = await _db.Destinations
             .AsNoTracking()
             .Include(d => d.Country)
@@ -75,18 +88,23 @@ public sealed class RecommendDestinationsCommandHandler
 
         var days = Math.Max(1, request.EndDate.DayNumber - request.StartDate.DayNumber + 1);
         var nights = Math.Max(1, days - 1);
-        var adults = request.Travelers.Count(t => t.Age >= 18);
-        var children = request.Travelers.Count(t => t.Age < 18);
-        var travelerCount = Math.Max(1, request.Travelers.Count);
+        var adults = travelers.Count(t => t.Age >= 18);
+        var children = travelers.Count(t => t.Age < 18);
+        var travelerCount = Math.Max(1, travelers.Count);
         var month = request.StartDate.Month;
         var priorities = request.Priorities.Select(p => p.Trim()).Where(p => p.Length > 0).ToHashSet(StringComparer.OrdinalIgnoreCase);
-        var category = request.TravelerCategory ?? string.Empty;
+        var category = string.IsNullOrWhiteSpace(request.TravelerCategory)
+            ? (children > 0 ? "Families" : "Dating & Couples")
+            : request.TravelerCategory;
+        var hasYoungKids = childAges.Any(a => a <= 11);
+        var hasTeens = childAges.Any(a => a is >= 12 and <= 17);
 
         var popularities = await _db.OriginPopularities
             .AsNoTracking()
             .Include(p => p.TargetDestination)!.ThenInclude(d => d!.Country)
             .Include(p => p.TargetDestination)!.ThenInclude(d => d!.CostProfiles)
             .Include(p => p.TargetDestination)!.ThenInclude(d => d!.Seasons)
+            .Include(p => p.TargetDestination)!.ThenInclude(d => d!.Attractions)
             .Where(p => p.OriginDestinationId == origin.Id && p.TargetDestination != null && p.TargetDestination.IsActive)
             .ToListAsync(cancellationToken);
 
@@ -101,11 +119,16 @@ public sealed class RecommendDestinationsCommandHandler
         foreach (var pop in popularities)
         {
             var dest = pop.TargetDestination!;
+
+            // With children, prefer family-friendly destinations and de-prioritize ultra-luxury adult-only spots
+            if (children > 0 && dest.FamilyFriendlyScore < 55 && dest.LuxuryScore >= 90 && dest.RomanceScore >= 95)
+                continue;
+
             var route = routes.FirstOrDefault(r => r.TargetDestinationId == dest.Id);
-            var option = SelectRouteOption(route, request.BudgetModeImplied());
+            var option = SelectRouteOption(route, BudgetModeImplied(request, travelers.Count));
             var season = ResolveSeason(dest.Seasons, month);
             var multiplier = season?.PriceMultiplier ?? 1.0m;
-            var profile = SelectCostProfile(dest.CostProfiles, season?.Id, request.BudgetModeImplied());
+            var profile = SelectCostProfile(dest.CostProfiles, season?.Id, BudgetModeImplied(request, travelers.Count));
 
             if (profile is null || option is null)
                 continue;
@@ -130,33 +153,37 @@ public sealed class RecommendDestinationsCommandHandler
                 Currency = profile.Currency
             };
 
-            var total = Sum(
-                transport,
-                stay,
-                food,
-                local,
-                activities,
-                transfer);
-
+            var total = Sum(transport, stay, food, local, activities, transfer);
             var contingency = total.Typical * (profile.ContingencyPercent / 100m);
             total.Min = Math.Round(total.Min * (1 + profile.ContingencyPercent / 200m), 2);
             total.Typical = Math.Round(total.Typical + contingency, 2);
             total.Max = Math.Round(total.Max * (1 + profile.ContingencyPercent / 100m), 2);
 
             var fit = ComputeBudgetFit(total.Typical, request.Budget);
-            var score = ScoreDestination(dest, pop, fit, priorities, category, children > 0, option);
-            var reasons = BuildReasons(dest, season, fit, priorities, category, option);
+            var score = ScoreDestination(dest, pop, fit, priorities, category, children > 0, hasYoungKids, hasTeens, option);
+            var reasons = BuildReasons(dest, season, fit, priorities, category, option, children, hasYoungKids);
+            var highlights = dest.Attractions
+                .Where(a => a.IsActive)
+                .OrderByDescending(a => children > 0 ? a.FamilyScore : a.PopularityScore)
+                .Take(4)
+                .Select(a => a.Name)
+                .ToList();
 
             recommendations.Add(new RecommendationDto(
                 dest.Name,
                 dest.Slug,
                 dest.Id,
+                dest.Country?.Name ?? string.Empty,
+                dest.Description ?? $"{dest.Name} travel destination",
                 total,
                 FormatDuration(option.DurationMinutes),
                 string.Join("/", route!.Options.Where(o => o.IsActive).Select(o => o.TravelMode.ToString()).Distinct()),
                 fit.ToString(),
-                SuitableFor(dest, category),
+                SuitableFor(dest, category, children > 0),
                 pop.Bucket,
+                dest.FamilyFriendlyScore >= 70,
+                dest.FamilyFriendlyScore,
+                highlights,
                 reasons,
                 score));
         }
@@ -167,7 +194,29 @@ public sealed class RecommendDestinationsCommandHandler
             .Take(12)
             .ToList();
 
-        return new RecommendDestinationsResponse(origin.Name, ordered);
+        return new RecommendDestinationsResponse(origin.Name, adults, children, childAges, ordered);
+    }
+
+    private static List<TravelerAgeDto> BuildTravelers(int adults, IReadOnlyList<int> childAges, IReadOnlyList<TravelerAgeDto>? travelers)
+    {
+        if (travelers is { Count: > 0 })
+            return travelers.ToList();
+
+        var list = new List<TravelerAgeDto>();
+        for (var i = 0; i < Math.Max(1, adults); i++)
+            list.Add(new TravelerAgeDto(30));
+        list.AddRange(childAges.Select(a => new TravelerAgeDto(a)));
+        return list;
+    }
+
+    private static string BudgetModeImplied(RecommendDestinationsCommand request, int travelerCount)
+    {
+        var days = Math.Max(1, request.EndDate.DayNumber - request.StartDate.DayNumber + 1);
+        var perDay = request.Budget / days / Math.Max(1, travelerCount);
+        if (perDay < 80) return "Budget";
+        if (perDay < 180) return "Balanced";
+        if (perDay < 320) return "Comfort";
+        return "Luxury";
     }
 
     private static RouteOption? SelectRouteOption(Route? route, string budgetMode)
@@ -190,12 +239,8 @@ public sealed class RecommendDestinationsCommandHandler
     private static Season? ResolveSeason(IEnumerable<Season> seasons, int month) =>
         seasons.FirstOrDefault(s => s.IsActive && IsMonthInRange(month, s.StartMonth, s.EndMonth));
 
-    private static bool IsMonthInRange(int month, int start, int end)
-    {
-        if (start <= end)
-            return month >= start && month <= end;
-        return month >= start || month <= end;
-    }
+    private static bool IsMonthInRange(int month, int start, int end) =>
+        start <= end ? month >= start && month <= end : month >= start || month <= end;
 
     private static DestinationCostProfile? SelectCostProfile(
         IEnumerable<DestinationCostProfile> profiles,
@@ -218,16 +263,14 @@ public sealed class RecommendDestinationsCommandHandler
             Currency = "USD"
         };
 
-    private static CostRangeDto Sum(params CostRangeDto[] parts)
-    {
-        return new CostRangeDto
+    private static CostRangeDto Sum(params CostRangeDto[] parts) =>
+        new()
         {
             Min = parts.Sum(p => p.Min),
             Typical = parts.Sum(p => p.Typical),
             Max = parts.Sum(p => p.Max),
             Currency = parts.FirstOrDefault()?.Currency ?? "USD"
         };
-    }
 
     private static BudgetFit ComputeBudgetFit(decimal typical, decimal budget)
     {
@@ -246,6 +289,8 @@ public sealed class RecommendDestinationsCommandHandler
         HashSet<string> priorities,
         string category,
         bool hasChildren,
+        bool hasYoungKids,
+        bool hasTeens,
         RouteOption option)
     {
         var score = pop.Score;
@@ -262,19 +307,25 @@ public sealed class RecommendDestinationsCommandHandler
         if (priorities.Contains("Culture")) score += dest.CultureScore;
         if (priorities.Contains("Adventure")) score += dest.AdventureScore;
         if (priorities.Contains("Comfort")) score += dest.LuxuryScore / 2;
+        if (priorities.Contains("Family") || hasChildren) score += dest.FamilyFriendlyScore;
 
-        if (category.Contains("Couple", StringComparison.OrdinalIgnoreCase) ||
-            category.Contains("Dating", StringComparison.OrdinalIgnoreCase) ||
-            category.Contains("Married", StringComparison.OrdinalIgnoreCase))
-            score += dest.CoupleScore;
-
-        if (category.Contains("Family", StringComparison.OrdinalIgnoreCase) || hasChildren)
+        if (hasChildren)
+        {
             score += dest.FamilyFriendlyScore;
+            if (hasYoungKids) score += dest.FamilyFriendlyScore / 2;
+            if (hasTeens) score += dest.AdventureScore / 3;
+            if (pop.Bucket is "Nearby" or "Domestic") score += 15;
+        }
+        else if (category.Contains("Couple", StringComparison.OrdinalIgnoreCase) ||
+                 category.Contains("Dating", StringComparison.OrdinalIgnoreCase) ||
+                 category.Contains("Married", StringComparison.OrdinalIgnoreCase))
+        {
+            score += dest.CoupleScore;
+        }
 
         if (category.Contains("Solo", StringComparison.OrdinalIgnoreCase))
             score += dest.SoloScore;
 
-        // Prefer shorter travel for short trips bias
         score += Math.Max(0, 30 - option.DurationMinutes / 20);
         return score;
     }
@@ -285,16 +336,29 @@ public sealed class RecommendDestinationsCommandHandler
         BudgetFit fit,
         HashSet<string> priorities,
         string category,
-        RouteOption option)
+        RouteOption option,
+        int children,
+        bool hasYoungKids)
     {
         var reasons = new List<string>();
         if (fit is BudgetFit.Excellent or BudgetFit.Good)
             reasons.Add($"Fits the selected budget ({fit})");
         else if (fit == BudgetFit.Partial)
-            reasons.Add("Slightly above budget — consider Balanced scenario");
+            reasons.Add("Slightly above budget — consider a shorter stay or Balanced scenario");
 
-        if (category.Contains("Couple", StringComparison.OrdinalIgnoreCase) && dest.CoupleScore >= 70)
+        if (children > 0)
+        {
+            reasons.Add(hasYoungKids
+                ? "Strong family-friendly options for younger children"
+                : "Good mix of activities for families with teens");
+            if (dest.FamilyFriendlyScore >= 80)
+                reasons.Add("High family suitability score");
+        }
+        else if (category.Contains("Couple", StringComparison.OrdinalIgnoreCase) && dest.CoupleScore >= 70)
+        {
             reasons.Add("Strong match for couples");
+        }
+
         if (priorities.Contains("Romance") && dest.RomanceScore >= 70)
             reasons.Add("High romance score");
         if (priorities.Contains("Culture") && dest.CultureScore >= 70)
@@ -305,13 +369,13 @@ public sealed class RecommendDestinationsCommandHandler
         return reasons;
     }
 
-    private static string SuitableFor(Destination dest, string category)
+    private static string SuitableFor(Destination dest, string category, bool hasChildren)
     {
+        if (hasChildren && dest.FamilyFriendlyScore >= 70) return "Family";
         if (dest.LuxuryScore >= 85) return "Luxury";
         if (dest.BudgetScore >= 80) return "Budget";
         if (dest.RomanceScore >= 80) return "Romance";
         if (dest.CoupleScore >= 80) return "Couple";
-        if (dest.FamilyFriendlyScore >= 80) return "Family";
         if (!string.IsNullOrWhiteSpace(category)) return category;
         return "General";
     }
@@ -321,19 +385,5 @@ public sealed class RecommendDestinationsCommandHandler
         var h = minutes / 60;
         var m = minutes % 60;
         return m == 0 ? $"{h}h" : $"{h}h {m}m";
-    }
-}
-
-file static class RecommendExtensions
-{
-    public static string BudgetModeImplied(this RecommendDestinationsCommand request)
-    {
-        // Map rough budget-per-day to tier for profile selection
-        var days = Math.Max(1, request.EndDate.DayNumber - request.StartDate.DayNumber + 1);
-        var perDay = request.Budget / days / Math.Max(1, request.Travelers.Count);
-        if (perDay < 80) return "Budget";
-        if (perDay < 180) return "Balanced";
-        if (perDay < 320) return "Comfort";
-        return "Luxury";
     }
 }

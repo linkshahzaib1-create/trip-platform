@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
   DestinationMatch,
+  DestinationProfile,
   EstimateResponse,
   RecommendResponse,
 } from '../models/trip.models';
@@ -28,6 +29,10 @@ export class TripApiService {
       `${this.api}/destinations/search`,
       { params: { q } },
     );
+  }
+
+  getDestination(id: number): Observable<DestinationProfile> {
+    return this.http.get<DestinationProfile>(`${this.api}/destinations/${id}`);
   }
 
   recommend(body: unknown): Observable<RecommendResponse> {

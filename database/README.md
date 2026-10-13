@@ -1,21 +1,37 @@
-# TripPlatform Database Scripts
+# TripPlatform Database
 
-Run in order against SQL Server (SSMS or `sqlcmd`):
+## Folders
+- `database/postgres/` — PostgreSQL DDL scripts
+- `database/*.sql` — legacy SQL Server scripts (optional)
+- `database/docker-compose.yml` — local Postgres 16
 
-1. `001_CreateDatabase.sql`
-2. `002_Schema_DestinationIntelligence.sql`
-3. `003_Schema_CostRoutesListings.sql`
-4. `004_Schema_Estimation.sql`
-5. `005_Indexes.sql`
-6. `006_Seed_ReferenceData.sql`
+## Local PostgreSQL (Docker)
 
-Local development currently uses **EF Core InMemory** (`Database:Provider = InMemory` in API `appsettings.json`). Switch to SQL Server with:
+```powershell
+cd database
+docker compose up -d
+```
+
+Connection string:
+
+```
+Host=localhost;Port=5432;Database=tripplatform;Username=trip;Password=trip
+```
+
+API `appsettings.Development.json`:
 
 ```json
-"Database": { "Provider": "SqlServer" },
+"Database": { "Provider": "PostgreSQL" },
 "ConnectionStrings": {
-  "DefaultConnection": "Server=localhost;Database=TripPlatform;Trusted_Connection=True;TrustServerCertificate=True;"
+  "DefaultConnection": "Host=localhost;Port=5432;Database=tripplatform;Username=trip;Password=trip"
 }
 ```
 
-Rich Lahore-centric demo destinations/routes/cost profiles are loaded by `DemoDataSeeder` when the API starts on InMemory.
+On first API start, EF Core `EnsureCreated` + `DemoDataSeeder` create tables and Lahore-centric seed data.
+
+## Railway
+
+Production uses Railway Postgres. The web service is configured with:
+
+- `Database__Provider=PostgreSQL`
+- `DATABASE_URL` / `ConnectionStrings__DefaultConnection` pointing at the Postgres service

@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using TripPlatform.Application.Destinations.Queries.GetDestination;
 using TripPlatform.Application.Destinations.Queries.RecommendDestinations;
 using TripPlatform.Application.Destinations.Queries.SearchDestinations;
 
@@ -21,6 +22,13 @@ public sealed class DestinationsController : ControllerBase
 
         var result = await _mediator.Send(new SearchDestinationsQuery(q), cancellationToken);
         return Ok(result);
+    }
+
+    [HttpGet("{id:int}")]
+    public async Task<ActionResult<DestinationProfileDto>> GetById(int id, CancellationToken cancellationToken)
+    {
+        var result = await _mediator.Send(new GetDestinationQuery(id), cancellationToken);
+        return result is null ? NotFound() : Ok(result);
     }
 
     [HttpPost("recommend")]

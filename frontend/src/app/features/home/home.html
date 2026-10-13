@@ -1,188 +1,228 @@
-<section class="relative overflow-hidden bg-primary text-primary-content">
-  <div class="absolute inset-0 bg-gradient-to-br from-primary via-primary to-secondary opacity-90"></div>
-  <div class="relative mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-14 lg:px-8 lg:py-16">
-    <div class="max-w-2xl">
-      <div class="badge badge-outline border-primary-content/40 text-primary-content mb-4 gap-1">
-        <ng-icon name="lucideSparkles" size="14"></ng-icon>
-        Destination discovery
-      </div>
-      <h1 class="text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
-        Where can you go from here?
-      </h1>
-      <p class="mt-3 text-sm sm:text-base opacity-90 leading-relaxed">
-        Enter origin, dates, travelers and budget to get personalized destinations with cost ranges,
-        then a day-by-day plan.
-      </p>
-    </div>
+<section class="bg-white border-b border-base-300">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+    <p class="inline-flex items-center gap-2 text-sm font-medium text-brand mb-3">
+      <ng-icon name="lucideSparkles" size="16"></ng-icon>
+      Destination travel planner
+    </p>
+    <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-ink max-w-3xl leading-tight">
+      Tell us who’s traveling — we’ll suggest the right places
+    </h1>
+    <p class="mt-4 text-muted max-w-2xl text-base sm:text-lg leading-relaxed">
+      Inspired by modern tour sites like Tripsite: pick your origin, dates, budget, and party size
+      (adults and children). Get destination recommendations tailored to families or couples.
+    </p>
   </div>
 </section>
 
-<section class="mx-auto -mt-8 sm:-mt-10 max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-  <div class="card bg-base-100 shadow-xl border border-base-300">
-    <div class="card-body p-4 sm:p-6 lg:p-8">
-      <form class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6" (ngSubmit)="discover()">
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideMapPin" size="16" class="text-primary"></ng-icon>
-            From
-          </legend>
-          <input class="input input-bordered w-full" name="origin" [(ngModel)]="origin" placeholder="Lahore" required />
-        </fieldset>
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-2 sm:mt-6 relative z-10">
+  <div class="bg-white border border-base-300 shadow-sm rounded-xl p-4 sm:p-6 lg:p-8">
+    <form class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" (ngSubmit)="discover()">
+      <fieldset class="fieldset p-0">
+        <legend class="fieldset-legend flex items-center gap-1 text-ink">
+          <ng-icon name="lucideMapPin" size="16" class="text-brand"></ng-icon>
+          From
+        </legend>
+        <input class="input input-bordered w-full" name="origin" [(ngModel)]="origin" required />
+      </fieldset>
 
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideCalendarDays" size="16" class="text-primary"></ng-icon>
-            Start
-          </legend>
-          <input class="input input-bordered w-full" type="date" name="startDate" [(ngModel)]="startDate" required />
-        </fieldset>
+      <fieldset class="fieldset p-0">
+        <legend class="fieldset-legend flex items-center gap-1">
+          <ng-icon name="lucideCalendarDays" size="16" class="text-brand"></ng-icon>
+          Start
+        </legend>
+        <input class="input input-bordered w-full" type="date" name="startDate" [(ngModel)]="startDate" required />
+      </fieldset>
 
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideCalendarDays" size="16" class="text-primary"></ng-icon>
-            End
-          </legend>
-          <input class="input input-bordered w-full" type="date" name="endDate" [(ngModel)]="endDate" required />
-        </fieldset>
+      <fieldset class="fieldset p-0">
+        <legend class="fieldset-legend flex items-center gap-1">
+          <ng-icon name="lucideCalendarDays" size="16" class="text-brand"></ng-icon>
+          End
+        </legend>
+        <input class="input input-bordered w-full" type="date" name="endDate" [(ngModel)]="endDate" required />
+      </fieldset>
 
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideUsers" size="16" class="text-primary"></ng-icon>
-            Adults
-          </legend>
-          <input class="input input-bordered w-full" type="number" min="1" name="adults" [(ngModel)]="adults" />
-        </fieldset>
+      <fieldset class="fieldset p-0">
+        <legend class="fieldset-legend flex items-center gap-1">
+          <ng-icon name="lucideWallet" size="16" class="text-brand"></ng-icon>
+          Budget (USD)
+        </legend>
+        <input class="input input-bordered w-full" type="number" min="1" name="budget" [(ngModel)]="budget" />
+      </fieldset>
 
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideWallet" size="16" class="text-primary"></ng-icon>
-            Budget (USD)
-          </legend>
-          <input class="input input-bordered w-full" type="number" min="1" name="budget" [(ngModel)]="budget" />
-        </fieldset>
-
-        <fieldset class="fieldset w-full p-0">
-          <legend class="fieldset-legend flex items-center gap-1">
-            <ng-icon name="lucideHeart" size="16" class="text-primary"></ng-icon>
-            Traveler type
-          </legend>
-          <select class="select select-bordered w-full" name="travelerCategory" [(ngModel)]="travelerCategory">
-            <option>Dating & Couples</option>
-            <option>Married Couples</option>
-            <option>Families</option>
-            <option>Solo Travelers</option>
-            <option>Friends / Bachelor / Bachelorette</option>
-          </select>
-        </fieldset>
-
-        <fieldset class="fieldset w-full p-0 sm:col-span-2 lg:col-span-3 xl:col-span-4">
-          <legend class="fieldset-legend">Priorities (comma-separated)</legend>
-          <input class="input input-bordered w-full" name="priorities" [(ngModel)]="priorities" />
-        </fieldset>
-
-        <div class="flex items-end sm:col-span-2 lg:col-span-3 xl:col-span-2">
-          <button class="btn btn-primary w-full gap-2" type="submit" [disabled]="loading()">
-            @if (loading()) {
-              <span class="loading loading-spinner loading-sm"></span>
-              Finding trips…
-            } @else {
-              <ng-icon name="lucideSearch" size="18"></ng-icon>
-              Discover destinations
-            }
-          </button>
+      <div class="md:col-span-2 xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="rounded-lg border border-base-300 p-4 bg-soft">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-semibold flex items-center gap-2">
+                <ng-icon name="lucideUsers" size="18" class="text-brand"></ng-icon>
+                Adults
+              </p>
+              <p class="text-xs text-muted mt-1">Age 18+</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-sm btn-circle btn-ghost border border-base-300" (click)="dec('adults')">
+                <ng-icon name="lucideMinus" size="16"></ng-icon>
+              </button>
+              <span class="w-8 text-center font-bold text-lg">{{ adults }}</span>
+              <button type="button" class="btn btn-sm btn-circle btn-ghost border border-base-300" (click)="inc('adults')">
+                <ng-icon name="lucidePlus" size="16"></ng-icon>
+              </button>
+            </div>
+          </div>
         </div>
-      </form>
 
-      @if (error()) {
-        <div role="alert" class="alert alert-error mt-4">
-          <ng-icon name="lucideCircleAlert" size="20"></ng-icon>
-          <span>{{ error() }}</span>
+        <div class="rounded-lg border border-base-300 p-4 bg-soft">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="font-semibold flex items-center gap-2">
+                <ng-icon name="lucideBaby" size="18" class="text-brand"></ng-icon>
+                Children
+              </p>
+              <p class="text-xs text-muted mt-1">Under 18</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button type="button" class="btn btn-sm btn-circle btn-ghost border border-base-300" (click)="dec('children')">
+                <ng-icon name="lucideMinus" size="16"></ng-icon>
+              </button>
+              <span class="w-8 text-center font-bold text-lg">{{ children }}</span>
+              <button type="button" class="btn btn-sm btn-circle btn-ghost border border-base-300" (click)="inc('children')">
+                <ng-icon name="lucidePlus" size="16"></ng-icon>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      @if (children > 0) {
+        <div class="md:col-span-2 xl:col-span-4">
+          <p class="text-sm font-medium mb-2">Child ages</p>
+          <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-3">
+            @for (age of childAges; track $index; let i = $index) {
+              <label class="form-control">
+                <span class="text-xs text-muted mb-1">Child {{ i + 1 }}</span>
+                <input
+                  class="input input-bordered input-sm w-full"
+                  type="number"
+                  min="0"
+                  max="17"
+                  [(ngModel)]="childAges[i]"
+                  [name]="'childAge' + i"
+                />
+              </label>
+            }
+          </div>
         </div>
       }
-    </div>
+
+      <fieldset class="fieldset p-0 md:col-span-2 xl:col-span-3">
+        <legend class="fieldset-legend">Priorities (comma-separated)</legend>
+        <input class="input input-bordered w-full" name="priorities" [(ngModel)]="priorities" />
+      </fieldset>
+
+      <div class="flex items-end">
+        <button class="btn w-full border-0 text-white bg-brand hover:bg-brand-dark gap-2" type="submit" [disabled]="loading()">
+          @if (loading()) {
+            <span class="loading loading-spinner loading-sm"></span>
+            Finding places…
+          } @else {
+            <ng-icon name="lucideSearch" size="18"></ng-icon>
+            Suggest destinations
+          }
+        </button>
+      </div>
+    </form>
+
+    @if (error()) {
+      <div role="alert" class="alert alert-error mt-4">
+        <ng-icon name="lucideCircleAlert" size="20"></ng-icon>
+        <span>{{ error() }}</span>
+      </div>
+    }
   </div>
 </section>
 
 @if (recommendations().length) {
-  <section class="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
-    <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-2xl font-bold sm:text-3xl">Recommended from {{ originLabel() }}</h2>
-        <p class="text-sm opacity-70 mt-1">Ranked by budget fit, travel time, and your priorities.</p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-ink">Recommended from {{ originLabel() }}</h2>
+        <p class="text-muted text-sm mt-1">
+          Matched for {{ partySummary() }}. Family-friendly spots are boosted when children are included.
+        </p>
       </div>
-      <div class="badge badge-lg badge-outline gap-1">
-        <ng-icon name="lucideSparkles" size="14"></ng-icon>
-        {{ recommendations().length }} matches
-      </div>
+      <span class="badge badge-lg badge-outline">{{ recommendations().length }} places</span>
     </div>
 
-    @for (group of groupedBuckets(); track group.bucket) {
-      <div class="mb-8">
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide opacity-70">{{ group.label }}</h3>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          @for (rec of group.items; track rec.destinationId) {
-            <article class="card bg-base-100 border border-base-300 shadow-sm hover:shadow-md transition-shadow h-full">
-              <div class="card-body gap-3 p-5">
-                <div class="flex items-start justify-between gap-3">
-                  <h4 class="card-title text-xl leading-tight">{{ rec.destination }}</h4>
-                  <span class="badge {{ fitBadge(rec.budgetFit) }} badge-sm whitespace-nowrap">{{ rec.budgetFit }}</span>
-                </div>
-
-                <p class="text-2xl font-bold text-primary">
-                  ${{ rec.estimatedCost.min | number: '1.0-0' }}
-                  <span class="text-base font-medium opacity-60">–</span>
-                  ${{ rec.estimatedCost.max | number: '1.0-0' }}
-                </p>
-
-                <div class="flex flex-wrap gap-2 text-xs sm:text-sm">
-                  <span class="badge badge-ghost gap-1">
-                    <ng-icon name="lucideClock3" size="14"></ng-icon>
-                    {{ rec.travelTime }}
-                  </span>
-                  <span class="badge badge-ghost gap-1">
-                    <ng-icon name="lucidePlane" size="14"></ng-icon>
-                    {{ rec.travelModes }}
-                  </span>
-                  <span class="badge badge-ghost gap-1">
-                    <ng-icon name="lucideHeart" size="14"></ng-icon>
-                    {{ rec.suitableFor }}
-                  </span>
-                </div>
-
-                <ul class="space-y-1 text-sm opacity-80 grow">
-                  @for (reason of rec.reasons; track reason) {
-                    <li class="flex gap-2">
-                      <span class="text-primary mt-0.5">•</span>
-                      <span>{{ reason }}</span>
-                    </li>
-                  }
-                </ul>
-
-                <div class="card-actions mt-auto">
-                  <button class="btn btn-primary btn-block gap-2" type="button" (click)="openEstimate(rec)">
-                    Plan this trip
-                    <ng-icon name="lucideArrowRight" size="18"></ng-icon>
-                  </button>
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      @for (rec of recommendations(); track rec.destinationId) {
+        <article class="bg-white border border-base-300 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+          <div class="h-40 bg-gradient-to-br from-sky-100 via-orange-50 to-emerald-100 flex items-end p-4">
+            <div>
+              <p class="text-xs uppercase tracking-wide text-muted">{{ rec.country }} · {{ rec.bucket }}</p>
+              <h3 class="text-2xl font-bold text-ink">{{ rec.destination }}</h3>
+            </div>
+          </div>
+          <div class="p-5 grid grid-cols-1 md:grid-cols-5 gap-5">
+            <div class="md:col-span-3 space-y-3">
+              <p class="text-sm text-muted leading-relaxed">{{ rec.description }}</p>
+              <p class="text-xl font-bold text-ink">
+                ${{ rec.estimatedCost.min | number: '1.0-0' }} – ${{ rec.estimatedCost.max | number: '1.0-0' }}
+              </p>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <span class="inline-flex items-center gap-1 rounded-full bg-soft px-3 py-1">
+                  <ng-icon name="lucideClock3" size="14"></ng-icon>
+                  {{ rec.travelTime }}
+                </span>
+                <span class="inline-flex items-center gap-1 rounded-full bg-soft px-3 py-1">
+                  <ng-icon name="lucidePlane" size="14"></ng-icon>
+                  {{ rec.travelModes }}
+                </span>
+                <span class="rounded-full px-3 py-1 font-medium {{ fitClass(rec.budgetFit) }}">{{ rec.budgetFit }}</span>
+                @if (rec.familyFriendly) {
+                  <span class="rounded-full bg-emerald-50 text-emerald-700 px-3 py-1 font-medium">Family friendly</span>
+                }
               </div>
-            </article>
-          }
-        </div>
-      </div>
-    }
+              <ul class="space-y-1 text-sm text-muted">
+                @for (reason of rec.reasons.slice(0, 3); track reason) {
+                  <li class="flex gap-2">
+                    <ng-icon name="lucideCheck" size="16" class="text-ok mt-0.5 shrink-0"></ng-icon>
+                    <span>{{ reason }}</span>
+                  </li>
+                }
+              </ul>
+            </div>
+            <aside class="md:col-span-2 rounded-lg bg-panel p-4">
+              <h4 class="font-semibold text-ink mb-3">Highlights</h4>
+              <ul class="space-y-2 text-sm">
+                @for (h of rec.highlights; track h) {
+                  <li class="flex gap-2">
+                    <ng-icon name="lucideCheck" size="16" class="text-ok mt-0.5 shrink-0"></ng-icon>
+                    <span>{{ h }}</span>
+                  </li>
+                } @empty {
+                  <li class="text-muted">Scenic stays and local experiences</li>
+                }
+              </ul>
+              <div class="mt-4 grid gap-2">
+                <button type="button" class="btn btn-sm border-0 text-white bg-brand hover:bg-brand-dark gap-1" (click)="openDestination(rec)">
+                  Tour overview
+                  <ng-icon name="lucideArrowRight" size="16"></ng-icon>
+                </button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="openEstimate(rec)">Get cost estimate</button>
+              </div>
+            </aside>
+          </div>
+        </article>
+      }
+    </div>
   </section>
 } @else if (!loading()) {
-  <section class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-    <div class="hero bg-base-100 border border-base-300 rounded-box">
-      <div class="hero-content text-center py-10 px-4">
-        <div class="max-w-md">
-          <ng-icon name="lucideCompass" size="40" class="text-primary mx-auto mb-3 block"></ng-icon>
-          <h2 class="text-xl font-bold">Start with your city</h2>
-          <p class="py-2 text-sm opacity-70">
-            Try Lahore with a $2,000 couple trip to see ranked nearby, domestic, and international ideas.
-          </p>
-        </div>
-      </div>
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div class="bg-white border border-base-300 rounded-xl p-8 text-center">
+      <h2 class="text-xl font-bold">How many people are going?</h2>
+      <p class="text-muted mt-2 max-w-xl mx-auto">
+        Use the adults and children controls above. Adding children prioritizes family-friendly destinations like Murree, Islamabad, and Dubai.
+      </p>
     </div>
   </section>
 }

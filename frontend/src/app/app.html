@@ -1,42 +1,35 @@
-<div class="min-h-screen bg-base-200 flex flex-col">
-  <div class="navbar bg-base-100 shadow-sm border-b border-base-300 px-4 sm:px-6 lg:px-8">
-    <div class="navbar-start gap-2">
-      <a routerLink="/" class="btn btn-ghost gap-2 px-2 text-lg sm:text-xl font-bold">
-        <ng-icon name="lucidePlane" size="22" class="text-primary"></ng-icon>
-        <span>TripPlatform</span>
-      </a>
+<div class="min-h-screen flex flex-col bg-soft">
+  <header class="border-b border-base-300 bg-white">
+    <div class="navbar max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16">
+      <div class="navbar-start gap-2">
+        <a routerLink="/" class="flex items-center gap-2 font-bold text-lg sm:text-xl text-ink">
+          <ng-icon name="lucidePlane" size="22" class="text-brand"></ng-icon>
+          <span>TripPlatform</span>
+        </a>
+      </div>
+      <div class="navbar-center hidden md:flex">
+        <ul class="menu menu-horizontal px-1 text-sm">
+          <li><a routerLink="/" routerLinkActive="text-brand" [routerLinkActiveOptions]="{ exact: true }">Destinations</a></li>
+          <li><a href="/swagger" target="_blank" rel="noopener">API</a></li>
+        </ul>
+      </div>
+      <div class="navbar-end">
+        <a routerLink="/" class="btn btn-sm sm:btn-md border-0 text-white bg-brand hover:bg-brand-dark">Plan a trip</a>
+      </div>
     </div>
-    <div class="navbar-center hidden md:flex">
-      <ul class="menu menu-horizontal gap-1 px-1">
-        <li>
-          <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
-            <ng-icon name="lucideCompass" size="18"></ng-icon>
-            Discover
-          </a>
-        </li>
-        <li>
-          <a href="/swagger" target="_blank" rel="noopener">
-            <ng-icon name="lucideGlobe2" size="18"></ng-icon>
-            API
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div class="navbar-end">
-      <a routerLink="/" class="btn btn-primary btn-sm sm:btn-md">Plan a trip</a>
-    </div>
-  </div>
+  </header>
 
   <main class="flex-1 w-full">
     <router-outlet />
   </main>
 
-  <footer class="footer footer-horizontal footer-center bg-base-100 text-base-content border-t border-base-300 p-6 sm:p-8">
-    <aside class="max-w-2xl text-center">
-      <p class="font-semibold">TripPlatform</p>
-      <p class="text-sm opacity-70">
-        Personalized destination discovery and trip cost estimation. Estimates are planning ranges, not live booking prices.
+  <footer class="bg-white border-t border-base-300 mt-10">
+    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 text-center">
+      <p class="font-semibold text-ink">TripPlatform</p>
+      <p class="text-sm text-muted mt-1 max-w-2xl mx-auto">
+        Destination discovery inspired by modern tour sites — tell us how many adults and children are traveling,
+        and we’ll suggest places that fit your party.
       </p>
-    </aside>
+    </div>
   </footer>
 </div>

@@ -1,0 +1,17 @@
+# Local PostgreSQL for TripPlatform development
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tripplatform-postgres
+    environment:
+      POSTGRES_USER: trip
+      POSTGRES_PASSWORD: trip
+      POSTGRES_DB: tripplatform
+    ports:
+      - "5432:5432"
+    volumes:
+      - trip_pg_data:/var/lib/postgresql/data
+      - ./postgres/001_Schema.sql:/docker-entrypoint-initdb.d/001_Schema.sql:ro
+
+volumes:
+  trip_pg_data:

@@ -49,19 +49,28 @@ See [database/README.md](database/README.md). Run scripts `001` → `006` in ord
 "Database": { "Provider": "SqlServer" }
 ```
 
-## Free public hosting (Render)
+## Live deployment
 
-Cursor does **not** provide public domains or app hosting (only private code backups). This project deploys as **one free service** on [Render](https://render.com): Angular SPA + .NET API in the same container.
+**Public app:** https://trip-platform-production.up.railway.app  
 
-1. Push this repo to GitHub.
-2. In Render: **New → Blueprint** → select the repo (uses `render.yaml`).
-3. Choose the **Free** plan and deploy.
+Cursor does **not** provide public domains or app hosting. This app is deployed on **Railway** (Angular SPA + .NET API + **PostgreSQL**).
 
-You get a public HTTPS URL like `https://trip-platform.onrender.com`.
+- Health: https://trip-platform-production.up.railway.app/health  
+- Swagger: https://trip-platform-production.up.railway.app/swagger  
+- GitHub: https://github.com/linkshahzaib1-create/trip-platform  
 
-Notes:
-- Free web services sleep after ~15 minutes idle; first request after sleep can take ~1 minute.
-- Data uses in-memory seed (resets when the service restarts).
+### Product flow (Tripsite-inspired)
+1. Enter origin, dates, budget  
+2. Set **Adults** and **Children** (with child ages)  
+3. Get destination suggestions ranked for your party  
+4. Open **Tour overview** (highlights sidebar) or **Get cost estimate**
+
+### Project folders
+```
+backend/    .NET Clean Architecture API
+frontend/   Angular destination travel UI
+database/   PostgreSQL scripts + docker-compose
+```
 
 ## Core APIs
 

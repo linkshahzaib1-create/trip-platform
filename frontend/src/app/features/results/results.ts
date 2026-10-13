@@ -42,7 +42,14 @@ export class ResultsComponent implements OnInit {
   ngOnInit(): void {
     const q = this.route.snapshot.queryParamMap;
     const adults = Number(q.get('adults') ?? 2);
-    const travelers = Array.from({ length: adults }, () => ({ age: 29 }));
+    const childAges = (q.get('childAges') ?? '')
+      .split(',')
+      .map((x) => Number(x.trim()))
+      .filter((n) => !Number.isNaN(n) && n >= 0 && n < 18);
+    const travelers = [
+      ...Array.from({ length: Math.max(1, adults) }, () => ({ age: 30 })),
+      ...childAges.map((age) => ({ age })),
+    ];
     this.api
       .estimate({
         origin: q.get('origin') ?? 'Lahore',
@@ -52,9 +59,9 @@ export class ResultsComponent implements OnInit {
         travelers,
         budget: Number(q.get('budget') ?? 2000),
         currency: 'USD',
-        travelerCategory: q.get('category') ?? 'Dating & Couples',
-        subcategory: q.get('subcategory') ?? 'FirstTripTogether',
-        priorities: (q.get('priorities') ?? 'Romance,Culture').split(',').map((p) => p.trim()),
+        travelerCategory: q.get('category') ?? (childAges.length ? 'Families' : 'Dating & Couples'),
+        subcategory: q.get('subcategory') ?? (childAges.length ? 'YoungKids' : 'FirstTripTogether'),
+        priorities: (q.get('priorities') ?? (childAges.length ? 'Family,Culture,Comfort' : 'Romance,Culture')).split(',').map((p) => p.trim()),
         budgetMode: 'Balanced',
       })
       .subscribe({
