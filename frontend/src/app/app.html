@@ -1,5 +1,5 @@
 <div class="min-h-screen flex flex-col bg-soft">
-  <header class="border-b border-base-300 bg-white">
+  <header class="border-b border-base-300 bg-white sticky top-0 z-30">
     <div class="navbar max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 min-h-16">
       <div class="navbar-start gap-2">
         <a routerLink="/" class="flex items-center gap-2 font-bold text-lg sm:text-xl text-ink">
@@ -9,12 +9,18 @@
       </div>
       <div class="navbar-center hidden md:flex">
         <ul class="menu menu-horizontal px-1 text-sm">
-          <li><a routerLink="/" routerLinkActive="text-brand" [routerLinkActiveOptions]="{ exact: true }">Destinations</a></li>
-          <li><a href="/swagger" target="_blank" rel="noopener">API</a></li>
+          <li><a href="#plan" routerLinkActive="text-brand" (click)="planTrip($event)">Destinations</a></li>
+          <li><a href="#top-destinations" (click)="goToSection($event, 'top-destinations')">Popular trips</a></li>
         </ul>
       </div>
       <div class="navbar-end">
-        <a routerLink="/" class="btn btn-sm sm:btn-md border-0 text-white bg-brand hover:bg-brand-dark">Plan a trip</a>
+        <a
+          href="#plan"
+          class="btn btn-sm sm:btn-md border-0 text-white bg-brand hover:bg-brand-dark"
+          (click)="planTrip($event)"
+        >
+          Plan a trip
+        </a>
       </div>
     </div>
   </header>
@@ -24,11 +30,31 @@
   </main>
 
   <footer class="bg-white border-t border-base-300 mt-10">
-    <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8 text-center">
-      <p class="font-semibold text-ink">TripPlatform</p>
-      <p class="text-sm text-muted mt-1 max-w-2xl mx-auto">
-        Destination discovery inspired by modern tour sites — tell us how many adults and children are traveling,
-        and we’ll suggest places that fit your party.
+    <div class="max-w-7xl mx-auto px-4 py-10 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+        <div>
+          <p class="font-semibold text-ink text-lg">TripPlatform</p>
+          <p class="text-sm text-muted mt-2 leading-relaxed">
+            Plan customized trips for families, couples, and groups — destination ideas, inclusions, and cost estimates in one place.
+          </p>
+        </div>
+        <div>
+          <p class="font-semibold text-ink mb-2">Explore</p>
+          <ul class="text-sm text-muted space-y-1">
+            <li><a href="#plan" class="hover:text-brand" (click)="planTrip($event)">Plan a trip</a></li>
+            <li><a href="#top-destinations" class="hover:text-brand">Top destinations</a></li>
+            <li><a routerLink="/" fragment="plan" class="hover:text-brand">Family &amp; couple suggestions</a></li>
+          </ul>
+        </div>
+        <div>
+          <p class="font-semibold text-ink mb-2">Travel tips</p>
+          <p class="text-sm text-muted leading-relaxed">
+            Add children to prioritize family-friendly stays. Check inclusions for insurance and transfers before you finalize dates.
+          </p>
+        </div>
+      </div>
+      <p class="text-xs text-muted text-center mt-8 pt-6 border-t border-base-200">
+        Destination discovery &amp; trip cost estimation — not a booking marketplace.
       </p>
     </div>
   </footer>

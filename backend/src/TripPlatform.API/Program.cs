@@ -74,8 +74,11 @@ try
         await seeder.SeedAsync();
     }
 
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    if (app.Environment.IsDevelopment())
+    {
+        app.UseSwagger();
+        app.UseSwaggerUI();
+    }
 
     app.UseSerilogRequestLogging();
     app.UseCors("Frontend");
