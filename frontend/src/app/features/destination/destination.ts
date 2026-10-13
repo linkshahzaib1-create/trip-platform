@@ -4,12 +4,33 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { NgIcon, provideIcons } from '@ng-icons/core';
 import {
   lucideArrowLeft,
+  lucideBedDouble,
+  lucideCalendarDays,
+  lucideCamera,
   lucideCheck,
   lucideCircleAlert,
+  lucideClipboardList,
+  lucideInfo,
+  lucideListChecks,
+  lucideMap,
   lucideMapPin,
+  lucideRoute,
+  lucideStar,
+  lucideX,
 } from '@ng-icons/lucide';
 import { TripApiService } from '../../core/services/trip-api.service';
 import { DestinationProfile } from '../../core/models/trip.models';
+
+type DestTab =
+  | 'overview'
+  | 'itinerary'
+  | 'map'
+  | 'stays'
+  | 'inclusions'
+  | 'pricing'
+  | 'extra'
+  | 'photos'
+  | 'reviews';
 
 @Component({
   selector: 'app-destination',
@@ -18,9 +39,19 @@ import { DestinationProfile } from '../../core/models/trip.models';
   providers: [
     provideIcons({
       lucideArrowLeft,
+      lucideBedDouble,
+      lucideCalendarDays,
+      lucideCamera,
       lucideCheck,
       lucideCircleAlert,
+      lucideClipboardList,
+      lucideInfo,
+      lucideListChecks,
+      lucideMap,
       lucideMapPin,
+      lucideRoute,
+      lucideStar,
+      lucideX,
     }),
   ],
   templateUrl: './destination.html',
@@ -33,6 +64,19 @@ export class DestinationComponent implements OnInit {
   error = signal<string | null>(null);
   profile = signal<DestinationProfile | null>(null);
   query = signal<Record<string, string>>({});
+  activeTab = signal<DestTab>('inclusions');
+
+  readonly tabs: { id: DestTab; label: string; icon: string }[] = [
+    { id: 'overview', label: 'Overview', icon: 'lucideClipboardList' },
+    { id: 'itinerary', label: 'Itinerary', icon: 'lucideRoute' },
+    { id: 'map', label: 'Map', icon: 'lucideMap' },
+    { id: 'stays', label: 'Hotels & Stays', icon: 'lucideBedDouble' },
+    { id: 'inclusions', label: 'Inclusions', icon: 'lucideListChecks' },
+    { id: 'pricing', label: 'Dates & Pricing', icon: 'lucideCalendarDays' },
+    { id: 'extra', label: 'Extra Info', icon: 'lucideInfo' },
+    { id: 'photos', label: 'Photos', icon: 'lucideCamera' },
+    { id: 'reviews', label: 'Reviews', icon: 'lucideStar' },
+  ];
 
   ngOnInit(): void {
     const id = Number(this.route.snapshot.paramMap.get('id'));
@@ -57,6 +101,10 @@ export class DestinationComponent implements OnInit {
         this.loading.set(false);
       },
     });
+  }
+
+  setTab(tab: DestTab): void {
+    this.activeTab.set(tab);
   }
 
   estimateLink(profile: DestinationProfile) {

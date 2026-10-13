@@ -126,4 +126,21 @@ CREATE TABLE IF NOT EXISTS "Activities" (
     "IsActive" BOOLEAN NOT NULL DEFAULT TRUE
 );
 
+CREATE TABLE IF NOT EXISTS "DestinationInclusions" (
+    "Id" SERIAL PRIMARY KEY,
+    "DestinationId" INT NOT NULL REFERENCES "Destinations"("Id"),
+    "IsIncluded" BOOLEAN NOT NULL,
+    "PackageTier" VARCHAR(64) NOT NULL,
+    "Title" VARCHAR(300) NOT NULL,
+    "Details" TEXT NULL,
+    "SortOrder" INT NOT NULL DEFAULT 0,
+    "IsCritical" BOOLEAN NOT NULL DEFAULT FALSE,
+    "CreatedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "UpdatedAtUtc" TIMESTAMPTZ NULL,
+    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE INDEX IF NOT EXISTS "IX_DestinationInclusions_DestinationId"
+    ON "DestinationInclusions"("DestinationId");
+
 -- Seed is performed by the API DemoDataSeeder on first boot.

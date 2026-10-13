@@ -28,6 +28,7 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Priority> Priorities => Set<Priority>();
     public DbSet<CurrencyRate> CurrencyRates => Set<CurrencyRate>();
     public DbSet<Listing> Listings => Set<Listing>();
+    public DbSet<DestinationInclusion> DestinationInclusions => Set<DestinationInclusion>();
     public DbSet<TripPlan> TripPlans => Set<TripPlan>();
     public DbSet<TripTraveler> TripTravelers => Set<TripTraveler>();
     public DbSet<TripDay> TripDays => Set<TripDay>();
@@ -71,6 +72,20 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
             .WithMany(d => d.OriginPopularities)
             .HasForeignKey(o => o.TargetDestinationId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<DestinationInclusion>()
+            .HasOne(i => i.Destination)
+            .WithMany(d => d.Inclusions)
+            .HasForeignKey(i => i.DestinationId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<DestinationInclusion>()
+            .Property(i => i.PackageTier)
+            .HasMaxLength(64);
+
+        modelBuilder.Entity<DestinationInclusion>()
+            .Property(i => i.Title)
+            .HasMaxLength(300);
 
         foreach (var property in modelBuilder.Model.GetEntityTypes()
                      .SelectMany(t => t.GetProperties())

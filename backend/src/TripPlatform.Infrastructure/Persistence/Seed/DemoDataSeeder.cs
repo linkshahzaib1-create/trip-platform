@@ -13,7 +13,10 @@ public sealed class DemoDataSeeder
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
         if (_db.Destinations.Any())
+        {
+            await SeedInclusionsIfMissingAsync(cancellationToken);
             return;
+        }
 
         var pakistan = new Country { Name = "Pakistan", Code = "PK", CurrencyCode = "PKR" };
         var uae = new Country { Name = "United Arab Emirates", Code = "AE", CurrencyCode = "AED" };
@@ -324,7 +327,91 @@ public sealed class DemoDataSeeder
                 PopularityScore = 84
             });
 
+        await SeedInclusionsForDestinationsAsync(
+            new[] { lahore, islamabad, murree, hunza, dubai, istanbul, bangkok, male, paris, helsinki },
+            cancellationToken);
+
         await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedInclusionsIfMissingAsync(CancellationToken cancellationToken)
+    {
+        if (_db.DestinationInclusions.Any())
+            return;
+
+        var destinations = _db.Destinations.Where(d => d.IsActive).ToList();
+        await SeedInclusionsForDestinationsAsync(destinations, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedInclusionsForDestinationsAsync(
+        IEnumerable<Destination> destinations,
+        CancellationToken cancellationToken)
+    {
+        foreach (var d in destinations)
+        {
+            var nightsHint = d.Name is "Maldives" or "Paris" or "Dubai" ? "5–7 nights" : "3–5 nights";
+            AddInc(d, true, "Standard", 1, "Accommodation", $"{nightsHint} in selected hotels / guesthouses based on trip category.");
+            AddInc(d, true, "Standard", 2, "Daily breakfast", "Breakfast included at the accommodation.");
+            AddInc(d, true, "Standard", 3, "Arrival transfer", $"Airport / station transfer into {d.Name} (must confirm arrival details in advance).");
+            AddInc(d, true, "Standard", 4, "Departure transfer", "Transfer on the official trip end date to airport / station.");
+            AddInc(d, true, "Standard", 5, "Local orientation", "Welcome briefing with destination tips and suggested pacing.");
+            AddInc(d, true, "Standard", 6, "Day-by-day trip plan", "Personalized estimated itinerary with attractions and meal windows.");
+            AddInc(d, true, "Standard", 7, "Luggage support guidance", "Packing guidance and luggage transfer options where available (max ~20 kg / person).");
+
+            AddInc(d, true, "Guided", 1, "Accommodation", "7 nights in selected properties.");
+            AddInc(d, true, "Guided", 2, "Breakfast", "Daily breakfast.");
+            AddInc(d, true, "Guided", 3, "Airport transfers", $"Arrival and departure transfers for {d.Name}.");
+            AddInc(d, true, "Guided", 4, "Local guide (shared)", "Guided sightseeing on selected days.");
+            AddInc(d, true, "Guided", 5, "Orientation walking tour", "City introduction walk on day 1.");
+            AddInc(d, true, "Guided", 6, "Luggage transfer option", "One suitcase per person (max 20 kg) between stays when multi-stop.");
+
+            AddInc(d, true, "PremiumGuided", 1, "Premium accommodation", "Higher-category hotels / resorts.");
+            AddInc(d, true, "PremiumGuided", 2, "Breakfast & selected dinners", "Daily breakfast plus 2–3 curated dinners.");
+            AddInc(d, true, "PremiumGuided", 3, "Private transfers", "Private arrival / departure transfers.");
+            AddInc(d, true, "PremiumGuided", 4, "Private guide options", "Private or small-group guiding on key days.");
+            AddInc(d, true, "PremiumGuided", 5, "Priority experiences", "Skip-the-line / timed-entry guidance for major attractions.");
+
+            AddInc(d, false, "Standard", 1, "Meals other than breakfast", "Lunch, dinner, snacks and drinks are usually at your own expense.");
+            AddInc(d, false, "Standard", 2, "Private guide & support vehicle", "Available as an upgrade.");
+            AddInc(d, false, "Standard", 3, "Transfers on non-official end dates", "Extra transfer fees may apply.");
+            AddInc(d, false, "Standard", 4, "Extra luggage", "Additional bags may incur a fee.");
+
+            AddInc(d, false, "Guided", 1, "Meals other than breakfast", null);
+            AddInc(d, false, "Guided", 2, "Personal expenses & shopping", null);
+            AddInc(d, false, "Guided", 3, "Optional activities", "Theme parks, premium shows, spa, etc.");
+
+            AddInc(d, false, "PremiumGuided", 1, "Meals other than listed inclusions", null);
+            AddInc(d, false, "PremiumGuided", 2, "Gratuities", "Tips for guides and drivers.");
+            AddInc(d, false, "PremiumGuided", 3, "Optional premium experiences", null);
+
+            AddInc(d, false, "AllVersions", 1, "Tourist / city tax", "Approx. $1–$5 per person per night where applicable.", critical: false);
+            AddInc(d, false, "AllVersions", 2, "Local transit tickets & ferries", "Metro, buses, short ferries, and attraction tickets unless listed.", critical: false);
+            AddInc(d, false, "AllVersions", 3, "Travel insurance", "Strongly recommended for all travelers.", critical: true);
+            AddInc(d, false, "AllVersions", 4, "Trip protection / cancellation cover", "Optional protection for delays and cancellations.", critical: true);
+            if (d.FamilyFriendlyScore >= 70)
+            {
+                AddInc(d, true, "Family", 1, "Family-friendly hotel guidance", "Properties with family rooms / connecting options preferred.");
+                AddInc(d, true, "Family", 2, "Kid-friendly activity suggestions", "Parks, gentle sightseeing, and shorter daily pacing.");
+                AddInc(d, false, "Family", 1, "Childcare / babysitting", "Not included unless arranged separately.");
+            }
+        }
+
+        await Task.CompletedTask;
+    }
+
+    private void AddInc(Destination d, bool included, string tier, int order, string title, string? details, bool critical = false)
+    {
+        _db.DestinationInclusions.Add(new DestinationInclusion
+        {
+            DestinationId = d.Id,
+            IsIncluded = included,
+            PackageTier = tier,
+            SortOrder = order,
+            Title = title,
+            Details = details,
+            IsCritical = critical
+        });
     }
 
     private void AddAttraction(Destination d, string name, string category, double lat, double lng, int duration,

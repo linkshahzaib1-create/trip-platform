@@ -23,6 +23,7 @@ public interface IApplicationDbContext
     DbSet<Priority> Priorities { get; }
     DbSet<CurrencyRate> CurrencyRates { get; }
     DbSet<Listing> Listings { get; }
+    DbSet<DestinationInclusion> DestinationInclusions { get; }
     DbSet<TripPlan> TripPlans { get; }
     DbSet<TripTraveler> TripTravelers { get; }
     DbSet<TripDay> TripDays { get; }

@@ -14,6 +14,21 @@ public sealed record DestinationAttractionDto(
     int FamilyScore,
     int CoupleScore);
 
+public sealed record InclusionItemDto(
+    string Title,
+    string? Details,
+    bool IsCritical,
+    int SortOrder);
+
+public sealed record InclusionGroupDto(
+    string PackageTier,
+    string PackageLabel,
+    IReadOnlyList<InclusionItemDto> Items);
+
+public sealed record DestinationInclusionsDto(
+    IReadOnlyList<InclusionGroupDto> Included,
+    IReadOnlyList<InclusionGroupDto> NotIncluded);
+
 public sealed record DestinationProfileDto(
     int Id,
     string Name,
@@ -28,11 +43,23 @@ public sealed record DestinationProfileDto(
     int AdventureScore,
     IReadOnlyList<string> Highlights,
     IReadOnlyList<DestinationAttractionDto> Attractions,
-    IReadOnlyList<string> Activities);
+    IReadOnlyList<string> Activities,
+    DestinationInclusionsDto Inclusions,
+    IReadOnlyList<string> SampleItinerary);
 
 public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQuery, DestinationProfileDto?>
 {
     private readonly IApplicationDbContext _db;
+
+    private static readonly Dictionary<string, string> TierLabels = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Standard"] = "STANDARD PACKAGE",
+        ["Guided"] = "GUIDED",
+        ["PremiumGuided"] = "PREMIUM GUIDED",
+        ["Family"] = "FAMILY",
+        ["AllVersions"] = "ALL VERSIONS",
+        ["SelfGuided"] = "SELF-GUIDED"
+    };
 
     public GetDestinationQueryHandler(IApplicationDbContext db) => _db = db;
 
@@ -44,6 +71,7 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
             .Include(d => d.Region)
             .Include(d => d.Attractions)
             .Include(d => d.Activities)
+            .Include(d => d.Inclusions)
             .FirstOrDefaultAsync(d => d.Id == request.Id && d.IsActive, cancellationToken);
 
         if (dest is null)
@@ -73,6 +101,9 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
             ];
         }
 
+        var inclusions = BuildInclusions(dest.Inclusions.Where(i => i.IsActive).ToList());
+        var sampleItinerary = BuildSampleItinerary(dest.Name, attractions.Select(a => a.Name).Take(3).ToList());
+
         return new DestinationProfileDto(
             dest.Id,
             dest.Name,
@@ -87,6 +118,49 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
             dest.AdventureScore,
             highlights,
             attractions,
-            dest.Activities.Where(a => a.IsActive).Select(a => a.Name).ToList());
+            dest.Activities.Where(a => a.IsActive).Select(a => a.Name).ToList(),
+            inclusions,
+            sampleItinerary);
+    }
+
+    private static DestinationInclusionsDto BuildInclusions(IReadOnlyList<Domain.Entities.DestinationInclusion> rows)
+    {
+        InclusionGroupDto[] Group(bool included) =>
+            rows.Where(r => r.IsIncluded == included)
+                .GroupBy(r => r.PackageTier)
+                .OrderBy(g => TierSort(g.Key))
+                .Select(g => new InclusionGroupDto(
+                    g.Key,
+                    TierLabels.GetValueOrDefault(g.Key, g.Key.ToUpperInvariant()),
+                    g.OrderBy(x => x.SortOrder)
+                        .Select(x => new InclusionItemDto(x.Title, x.Details, x.IsCritical, x.SortOrder))
+                        .ToList()))
+                .ToArray();
+
+        return new DestinationInclusionsDto(Group(true), Group(false));
+    }
+
+    private static int TierSort(string tier) => tier.ToLowerInvariant() switch
+    {
+        "standard" or "selfguided" => 1,
+        "guided" => 2,
+        "premiumguided" => 3,
+        "family" => 4,
+        "allversions" => 5,
+        _ => 9
+    };
+
+    private static List<string> BuildSampleItinerary(string name, IReadOnlyList<string> attractionNames)
+    {
+        var day2 = attractionNames.ElementAtOrDefault(0) ?? $"{name} highlights";
+        var day3 = attractionNames.ElementAtOrDefault(1) ?? "Local food and markets";
+        return
+        [
+            $"Day 1 — Arrival in {name}, transfer & check-in, evening neighborhood walk",
+            $"Day 2 — {day2}, lunch nearby, optional evening activity",
+            $"Day 3 — {day3}, free time / shopping",
+            $"Day 4 — Flexible day for family pacing or premium experiences",
+            $"Final day — Breakfast, last visit, departure transfer"
+        ];
     }
 }

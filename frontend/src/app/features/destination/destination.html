@@ -14,7 +14,7 @@
       <span>{{ error() }}</span>
     </div>
   } @else if (profile(); as p) {
-    <div class="h-48 sm:h-64 rounded-xl bg-gradient-to-br from-sky-200 via-orange-100 to-emerald-100 mb-6 flex items-end p-6">
+    <div class="h-44 sm:h-56 rounded-xl bg-gradient-to-br from-sky-200 via-orange-100 to-emerald-100 mb-0 flex items-end p-6">
       <div>
         <p class="text-sm uppercase tracking-wide text-muted flex items-center gap-1">
           <ng-icon name="lucideMapPin" size="14"></ng-icon>
@@ -24,38 +24,212 @@
       </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div class="lg:col-span-2 space-y-6">
-        <section id="ts-tour-overview" class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
-          <h2 class="text-xl font-bold mb-3">Overview</h2>
-          <p class="text-muted leading-relaxed">
-            {{ p.description || ('Discover ' + p.name + ' with a personalized itinerary based on your travel party.') }}
-            Our planner balances sightseeing, food, and pacing for your group size — including child-friendly options when kids are traveling.
-          </p>
-        </section>
+    <!-- Tripsite-style destination tabs -->
+    <nav
+      class="flex gap-1 overflow-x-auto border-b border-base-300 bg-white sticky top-0 z-10 -mx-4 px-4 sm:mx-0 sm:px-0"
+      aria-label="Destination sections"
+    >
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          class="shrink-0 inline-flex items-center gap-1.5 px-3 sm:px-4 py-3 text-sm font-medium transition-colors border-b-2 -mb-px"
+          [class.border-brand]="activeTab() === tab.id"
+          [class.text-white]="activeTab() === tab.id"
+          [class.bg-brand]="activeTab() === tab.id"
+          [class.border-transparent]="activeTab() !== tab.id"
+          [class.text-muted]="activeTab() !== tab.id"
+          [class.hover:text-ink]="activeTab() !== tab.id"
+          (click)="setTab(tab.id)"
+        >
+          <ng-icon [name]="tab.icon" size="15"></ng-icon>
+          <span class="whitespace-nowrap">{{ tab.label }}</span>
+        </button>
+      }
+    </nav>
 
-        <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
-          <h2 class="text-xl font-bold mb-4">Things to do</h2>
-          <div class="space-y-3">
-            @for (a of p.attractions; track a.name) {
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-base-200 pb-3">
-                <div>
-                  <p class="font-medium">{{ a.name }}</p>
-                  <p class="text-sm text-muted">{{ a.category }} · {{ a.durationMinutes }} min</p>
-                </div>
-                <div class="text-sm text-muted">
-                  From ${{ a.entryCostTypical | number: '1.0-0' }}
-                  · Family {{ a.familyScore }}/5
-                </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+      <div class="lg:col-span-2">
+        @if (activeTab() === 'overview') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7 space-y-6">
+            <div>
+              <h2 class="text-xl font-bold mb-3">Overview</h2>
+              <p class="text-muted leading-relaxed">
+                {{ p.description || ('Discover ' + p.name + ' with a personalized itinerary based on your travel party.') }}
+                Our planner balances sightseeing, food, and pacing for your group — including child-friendly options when kids are traveling.
+              </p>
+            </div>
+            <div>
+              <h3 class="font-semibold mb-3">Things to do</h3>
+              <div class="space-y-3">
+                @for (a of p.attractions; track a.name) {
+                  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-base-200 pb-3">
+                    <div>
+                      <p class="font-medium">{{ a.name }}</p>
+                      <p class="text-sm text-muted">{{ a.category }} · {{ a.durationMinutes }} min</p>
+                    </div>
+                    <div class="text-sm text-muted">
+                      From ${{ a.entryCostTypical | number: '1.0-0' }}
+                      · Family {{ a.familyScore }}/5
+                    </div>
+                  </div>
+                } @empty {
+                  <p class="text-muted">Attractions will appear as this destination is enriched.</p>
+                }
               </div>
-            } @empty {
-              <p class="text-muted">Attractions will appear as this destination is enriched.</p>
+            </div>
+          </section>
+        }
+
+        @if (activeTab() === 'itinerary') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-4">Sample itinerary</h2>
+            <ol class="space-y-4">
+              @for (day of p.sampleItinerary; track day; let i = $index) {
+                <li class="flex gap-3">
+                  <span class="shrink-0 w-8 h-8 rounded-full bg-brand text-white text-sm font-bold flex items-center justify-center">{{ i + 1 }}</span>
+                  <p class="text-ink pt-1">{{ day }}</p>
+                </li>
+              }
+            </ol>
+          </section>
+        }
+
+        @if (activeTab() === 'map') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Map</h2>
+            <p class="text-muted mb-4">Key stops and attractions for {{ p.name }}.</p>
+            <div class="rounded-lg bg-panel border border-base-300 h-64 flex items-center justify-center text-muted">
+              Interactive map coming soon — use Overview attractions as your planning base.
+            </div>
+          </section>
+        }
+
+        @if (activeTab() === 'stays') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Hotels &amp; stays</h2>
+            <p class="text-muted leading-relaxed">
+              Stay recommendations are matched to your party size and budget when you run a trip estimate.
+              Family rooms and connecting options are preferred when children are traveling.
+            </p>
+            @if (p.activities.length) {
+              <h3 class="font-semibold mt-5 mb-2">Suggested activities</h3>
+              <ul class="list-disc pl-5 text-muted space-y-1">
+                @for (act of p.activities; track act) {
+                  <li>{{ act }}</li>
+                }
+              </ul>
             }
-          </div>
-        </section>
+          </section>
+        }
+
+        @if (activeTab() === 'inclusions') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
+              <!-- What's Included -->
+              <div>
+                <h2 class="text-2xl font-bold text-ink mb-5">What's Included</h2>
+                @for (group of p.inclusions?.included ?? []; track group.packageTier) {
+                  <div class="mb-6">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-ink mb-3">{{ group.packageLabel }}:</h3>
+                    <ul class="space-y-3">
+                      @for (item of group.items; track item.title) {
+                        <li class="flex gap-2.5 text-sm leading-relaxed">
+                          <ng-icon name="lucideCheck" size="18" class="text-ok shrink-0 mt-0.5"></ng-icon>
+                          <span class="text-ink">
+                            <span class="font-medium">{{ item.title }}</span>
+                            @if (item.details) {
+                              <span class="text-muted"> — {{ item.details }}</span>
+                            }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @empty {
+                  <p class="text-muted text-sm">Inclusion details are being prepared for this destination.</p>
+                }
+              </div>
+
+              <!-- What's Not Included -->
+              <div>
+                <h2 class="text-2xl font-bold text-ink mb-5">What's Not Included</h2>
+                @for (group of p.inclusions?.notIncluded ?? []; track group.packageTier) {
+                  <div class="mb-6">
+                    <h3 class="text-sm font-bold uppercase tracking-wide text-ink mb-3">{{ group.packageLabel }}:</h3>
+                    <ul class="space-y-3">
+                      @for (item of group.items; track item.title) {
+                        <li class="flex gap-2.5 text-sm leading-relaxed">
+                          <ng-icon name="lucideX" size="18" class="text-error shrink-0 mt-0.5"></ng-icon>
+                          <span [class.text-error]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-ink]="!item.isCritical">
+                            <span>{{ item.title }}</span>
+                            @if (item.details) {
+                              <span [class.text-error]="item.isCritical" [class.text-muted]="!item.isCritical"> — {{ item.details }}</span>
+                            }
+                          </span>
+                        </li>
+                      }
+                    </ul>
+                  </div>
+                } @empty {
+                  <p class="text-muted text-sm">Exclusion details are being prepared for this destination.</p>
+                }
+              </div>
+            </div>
+          </section>
+        }
+
+        @if (activeTab() === 'pricing') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Dates &amp; pricing</h2>
+            <p class="text-muted mb-4">
+              Get a personalized cost range for your dates, adults, and children. Estimates cover travel, stays, food, and activities.
+            </p>
+            <a
+              class="btn border-0 text-white bg-brand hover:bg-brand-dark"
+              [routerLink]="['/results']"
+              [queryParams]="estimateLink(p)"
+            >
+              Estimate this trip
+            </a>
+          </section>
+        }
+
+        @if (activeTab() === 'extra') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Extra info</h2>
+            <ul class="space-y-2 text-muted text-sm">
+              <li>Travel insurance is strongly recommended for all travelers.</li>
+              <li>Tourist taxes and local transit tickets are typically paid on arrival.</li>
+              <li>Confirm arrival details early so transfers can be arranged.</li>
+              <li>Pack light — extra luggage may incur fees on multi-stop trips.</li>
+            </ul>
+          </section>
+        }
+
+        @if (activeTab() === 'photos') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Photos</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-sky-300 to-blue-200"></div>
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-orange-200 to-amber-100"></div>
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-emerald-200 to-teal-100"></div>
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-rose-200 to-pink-100"></div>
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-violet-200 to-indigo-100"></div>
+              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-slate-300 to-stone-200"></div>
+            </div>
+            <p class="text-sm text-muted mt-3">Photo gallery placeholders — destination media will appear here.</p>
+          </section>
+        }
+
+        @if (activeTab() === 'reviews') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
+            <h2 class="text-xl font-bold mb-3">Reviews</h2>
+            <p class="text-muted">Traveler reviews will appear here as the platform grows. Suitability scores on the right reflect our current destination model.</p>
+          </section>
+        }
       </div>
 
-      <aside class="space-y-4">
+      <aside class="space-y-4 lg:sticky lg:top-16 self-start">
         <div class="bg-panel rounded-xl p-5 border border-base-300">
           <h3 class="font-bold text-lg mb-3">Highlights</h3>
           <ul class="space-y-2">

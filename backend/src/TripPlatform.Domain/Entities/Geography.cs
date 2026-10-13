@@ -55,6 +55,7 @@ public class Destination : AuditableEntity
     public ICollection<Season> Seasons { get; set; } = new List<Season>();
     public ICollection<OriginPopularity> OriginPopularities { get; set; } = new List<OriginPopularity>();
     public ICollection<Listing> Listings { get; set; } = new List<Listing>();
+    public ICollection<DestinationInclusion> Inclusions { get; set; } = new List<DestinationInclusion>();
 }
 
 public class DestinationCategory : AuditableEntity

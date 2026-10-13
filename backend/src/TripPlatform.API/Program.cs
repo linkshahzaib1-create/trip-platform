@@ -49,6 +49,25 @@ try
         if (!provider.Equals("InMemory", StringComparison.OrdinalIgnoreCase))
         {
             await db.Database.EnsureCreatedAsync();
+            // Ensure inclusions table exists on already-created Postgres databases
+            if (provider.Equals("PostgreSQL", StringComparison.OrdinalIgnoreCase))
+            {
+                await db.Database.ExecuteSqlRawAsync("""
+                    CREATE TABLE IF NOT EXISTS "DestinationInclusions" (
+                        "Id" SERIAL PRIMARY KEY,
+                        "DestinationId" INT NOT NULL REFERENCES "Destinations"("Id"),
+                        "IsIncluded" BOOLEAN NOT NULL,
+                        "PackageTier" VARCHAR(64) NOT NULL,
+                        "Title" VARCHAR(300) NOT NULL,
+                        "Details" TEXT NULL,
+                        "SortOrder" INT NOT NULL DEFAULT 0,
+                        "IsCritical" BOOLEAN NOT NULL DEFAULT FALSE,
+                        "CreatedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                        "UpdatedAtUtc" TIMESTAMPTZ NULL,
+                        "IsActive" BOOLEAN NOT NULL DEFAULT TRUE
+                    );
+                    """);
+            }
         }
 
         var seeder = scope.ServiceProvider.GetRequiredService<DemoDataSeeder>();

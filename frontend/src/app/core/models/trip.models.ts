@@ -40,6 +40,24 @@ export interface RecommendResponse {
   recommendations: Recommendation[];
 }
 
+export interface InclusionItem {
+  title: string;
+  details?: string | null;
+  isCritical: boolean;
+  sortOrder: number;
+}
+
+export interface InclusionGroup {
+  packageTier: string;
+  packageLabel: string;
+  items: InclusionItem[];
+}
+
+export interface DestinationInclusions {
+  included: InclusionGroup[];
+  notIncluded: InclusionGroup[];
+}
+
 export interface DestinationProfile {
   id: number;
   name: string;
@@ -62,6 +80,8 @@ export interface DestinationProfile {
     coupleScore: number;
   }[];
   activities: string[];
+  inclusions: DestinationInclusions;
+  sampleItinerary: string[];
 }
 
 export interface EstimateLine {
