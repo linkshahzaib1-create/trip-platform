@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TripPlatform.Domain.Entities;
 using TripPlatform.Domain.Enums;
 using TripPlatform.Infrastructure.Persistence;
@@ -15,6 +16,7 @@ public sealed class DemoDataSeeder
         if (_db.Destinations.Any())
         {
             await SeedInclusionsIfMissingAsync(cancellationToken);
+            await SeedTransportAndFlightQuotesIfMissingAsync(cancellationToken);
             return;
         }
 
@@ -113,11 +115,19 @@ public sealed class DemoDataSeeder
         AddAttraction(paris, "Eiffel Tower", "Landmark", 48.8584, 2.2945, 120, 20, 30, 45, 99, 4, 5, 5, 5, 5, 5);
 
         AddActivity(lahore, "Lahore Food Tour", "Food", 180, 15, 25, 40, 3, 5, 4);
+        AddActivity(lahore, "Walled City Heritage Walk", "Culture", 150, 8, 15, 25, 4, 4, 5);
+        AddActivity(islamabad, "Margalla Hills Trail Walk", "Adventure", 180, 0, 10, 25, 5, 4, 5);
+        AddActivity(murree, "Mall Road Family Stroll", "Family", 120, 5, 12, 25, 5, 4, 3);
         AddActivity(hunza, "Hunza Jeep Tour", "Adventure", 300, 40, 70, 110, 4, 4, 5);
         AddActivity(dubai, "Dubai Desert Safari", "Adventure", 360, 40, 70, 120, 5, 5, 4);
+        AddActivity(dubai, "Dubai Marina Evening Cruise", "Cruise", 90, 25, 45, 80, 4, 5, 4);
         AddActivity(istanbul, "Bosphorus Cruise", "Cruise", 120, 20, 35, 60, 4, 5, 4);
+        AddActivity(bangkok, "Chao Phraya Dinner Cruise", "Cruise", 120, 25, 45, 75, 3, 5, 4);
+        AddActivity(bangkok, "Street Food Night Market Tour", "Food", 180, 15, 28, 45, 4, 4, 5);
         AddActivity(male, "Maldives Snorkeling", "Water", 180, 30, 60, 120, 3, 5, 4);
         AddActivity(paris, "Seine River Cruise", "Cruise", 90, 25, 40, 70, 4, 5, 4);
+        AddActivity(paris, "Louvre Timed-Entry Visit", "Culture", 180, 20, 35, 55, 3, 5, 4);
+        AddActivity(helsinki, "Suomenlinna Ferry Day Trip", "Culture", 240, 15, 30, 50, 4, 4, 5);
 
         Season Peak(Destination d, string name, int sm, int em, decimal m) => new()
         {
@@ -332,6 +342,7 @@ public sealed class DemoDataSeeder
             cancellationToken);
 
         await _db.SaveChangesAsync(cancellationToken);
+        await SeedTransportAndFlightQuotesIfMissingAsync(cancellationToken);
     }
 
     private async Task SeedInclusionsIfMissingAsync(CancellationToken cancellationToken)
@@ -341,6 +352,103 @@ public sealed class DemoDataSeeder
 
         var destinations = _db.Destinations.Where(d => d.IsActive).ToList();
         await SeedInclusionsForDestinationsAsync(destinations, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    private async Task SeedTransportAndFlightQuotesIfMissingAsync(CancellationToken cancellationToken)
+    {
+        if (!_db.TransportQuotes.Any())
+        {
+            foreach (var dest in _db.Destinations.Where(d => d.IsActive).ToList())
+            {
+                var profile = _db.DestinationCostProfiles
+                    .Where(p => p.DestinationId == dest.Id)
+                    .OrderBy(p => p.BudgetTier == "Balanced" ? 0 : 1)
+                    .FirstOrDefault();
+                var local = profile?.LocalTransportTypical ?? 8m;
+                _db.TransportQuotes.AddRange(
+                    new TransportQuote
+                    {
+                        DestinationId = dest.Id,
+                        Mode = "Taxi",
+                        Title = "City taxi / ride-hail (short trip)",
+                        Details = "Typical short city ride; airport runs cost more.",
+                        TypicalMinutes = 25,
+                        PriceMin = Math.Round(local * 0.6m, 2),
+                        PriceTypical = local,
+                        PriceMax = Math.Round(local * 2.2m, 2),
+                        Source = "Seed",
+                        FetchedAtUtc = DateTime.UtcNow
+                    },
+                    new TransportQuote
+                    {
+                        DestinationId = dest.Id,
+                        Mode = "PublicTransit",
+                        Title = "Metro / bus day pass",
+                        Details = "Public transit where available.",
+                        TypicalMinutes = 40,
+                        PriceMin = Math.Round(local * 0.15m, 2),
+                        PriceTypical = Math.Round(local * 0.35m, 2),
+                        PriceMax = Math.Round(local * 0.7m, 2),
+                        Source = "Seed",
+                        FetchedAtUtc = DateTime.UtcNow
+                    },
+                    new TransportQuote
+                    {
+                        DestinationId = dest.Id,
+                        Mode = "CarRental",
+                        Title = "Car rental (per day)",
+                        Details = "Economy car estimate excluding fuel.",
+                        PriceMin = 25,
+                        PriceTypical = 45,
+                        PriceMax = 85,
+                        Source = "Seed",
+                        FetchedAtUtc = DateTime.UtcNow
+                    },
+                    new TransportQuote
+                    {
+                        DestinationId = dest.Id,
+                        Mode = "Transfer",
+                        Title = "Airport / station transfer",
+                        Details = "One-way private transfer estimate.",
+                        TypicalMinutes = 45,
+                        PriceMin = profile?.AirportTransferMin ?? 15,
+                        PriceTypical = profile?.AirportTransferTypical ?? 30,
+                        PriceMax = profile?.AirportTransferMax ?? 60,
+                        Source = "Seed",
+                        FetchedAtUtc = DateTime.UtcNow
+                    });
+            }
+        }
+
+        if (!_db.FlightQuotes.Any())
+        {
+            var routes = _db.Routes.Include(r => r.Options).Where(r => r.IsActive).ToList();
+            foreach (var route in routes)
+            {
+                var flight = route.Options.FirstOrDefault(o => o.TravelMode == TravelMode.Flight)
+                    ?? route.Options.OrderBy(o => o.CostTypical).FirstOrDefault();
+                if (flight is null)
+                    continue;
+
+                _db.FlightQuotes.Add(new FlightQuote
+                {
+                    OriginDestinationId = route.OriginDestinationId,
+                    TargetDestinationId = route.TargetDestinationId,
+                    Airline = "Multiple carriers",
+                    CabinClass = "Economy",
+                    DurationMinutes = flight.DurationMinutes,
+                    PriceMin = flight.CostMin,
+                    PriceTypical = flight.CostTypical,
+                    PriceMax = flight.CostMax,
+                    BaggageNotes = "Cabin bag usually included; checked baggage often extra ($20–$60).",
+                    ScheduleNotes = $"{flight.DurationMinutes / 60}h {flight.DurationMinutes % 60}m typical duration",
+                    Source = "Seed",
+                    FetchedAtUtc = DateTime.UtcNow
+                });
+            }
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
     }
 

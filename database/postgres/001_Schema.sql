@@ -143,4 +143,42 @@ CREATE TABLE IF NOT EXISTS "DestinationInclusions" (
 CREATE INDEX IF NOT EXISTS "IX_DestinationInclusions_DestinationId"
     ON "DestinationInclusions"("DestinationId");
 
+CREATE TABLE IF NOT EXISTS "FlightQuotes" (
+    "Id" SERIAL PRIMARY KEY,
+    "OriginDestinationId" INT NOT NULL REFERENCES "Destinations"("Id"),
+    "TargetDestinationId" INT NOT NULL REFERENCES "Destinations"("Id"),
+    "Airline" VARCHAR(200) NOT NULL,
+    "CabinClass" VARCHAR(64) NOT NULL DEFAULT 'Economy',
+    "DurationMinutes" INT NOT NULL DEFAULT 0,
+    "PriceMin" NUMERIC(18,2) NOT NULL,
+    "PriceTypical" NUMERIC(18,2) NOT NULL,
+    "PriceMax" NUMERIC(18,2) NOT NULL,
+    "Currency" VARCHAR(8) NOT NULL DEFAULT 'USD',
+    "BaggageNotes" TEXT NULL,
+    "ScheduleNotes" TEXT NULL,
+    "Source" VARCHAR(64) NOT NULL DEFAULT 'RouteEstimate',
+    "FetchedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "CreatedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "UpdatedAtUtc" TIMESTAMPTZ NULL,
+    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+CREATE TABLE IF NOT EXISTS "TransportQuotes" (
+    "Id" SERIAL PRIMARY KEY,
+    "DestinationId" INT NOT NULL REFERENCES "Destinations"("Id"),
+    "Mode" VARCHAR(64) NOT NULL,
+    "Title" VARCHAR(300) NOT NULL,
+    "Details" TEXT NULL,
+    "TypicalMinutes" INT NULL,
+    "PriceMin" NUMERIC(18,2) NOT NULL,
+    "PriceTypical" NUMERIC(18,2) NOT NULL,
+    "PriceMax" NUMERIC(18,2) NOT NULL,
+    "Currency" VARCHAR(8) NOT NULL DEFAULT 'USD',
+    "Source" VARCHAR(64) NOT NULL DEFAULT 'CostProfileEstimate',
+    "FetchedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "CreatedAtUtc" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    "UpdatedAtUtc" TIMESTAMPTZ NULL,
+    "IsActive" BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 -- Seed is performed by the API DemoDataSeeder on first boot.

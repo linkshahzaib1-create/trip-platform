@@ -10,7 +10,25 @@ public sealed record DestinationAttractionDto(
     string Name,
     string Category,
     int DurationMinutes,
+    decimal EntryCostMin,
     decimal EntryCostTypical,
+    decimal EntryCostMax,
+    string Currency,
+    string? OpeningHours,
+    int FamilyScore,
+    int CoupleScore);
+
+public sealed record DestinationActivityDto(
+    int Id,
+    string Name,
+    string Category,
+    int DurationMinutes,
+    decimal CostMin,
+    decimal CostTypical,
+    decimal CostMax,
+    string Currency,
+    string BudgetLevel,
+    string? Description,
     int FamilyScore,
     int CoupleScore);
 
@@ -43,7 +61,7 @@ public sealed record DestinationProfileDto(
     int AdventureScore,
     IReadOnlyList<string> Highlights,
     IReadOnlyList<DestinationAttractionDto> Attractions,
-    IReadOnlyList<string> Activities,
+    IReadOnlyList<DestinationActivityDto> Activities,
     DestinationInclusionsDto Inclusions,
     IReadOnlyList<string> SampleItinerary);
 
@@ -84,7 +102,31 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
                 a.Name,
                 a.Category,
                 a.AverageVisitDurationMinutes,
+                a.EntryCostMin,
                 a.EntryCostTypical,
+                a.EntryCostMax,
+                a.Currency,
+                a.OpeningTime is null && a.ClosingTime is null
+                    ? null
+                    : $"{a.OpeningTime ?? "09:00"}–{a.ClosingTime ?? "18:00"}",
+                a.FamilyScore,
+                a.CoupleScore))
+            .ToList();
+
+        var activities = dest.Activities
+            .Where(a => a.IsActive)
+            .OrderByDescending(a => a.FamilyScore + a.CoupleScore)
+            .Select(a => new DestinationActivityDto(
+                a.Id,
+                a.Name,
+                a.Category,
+                a.DurationMinutes,
+                a.CostMin,
+                a.CostTypical,
+                a.CostMax,
+                a.Currency,
+                a.BudgetLevel,
+                a.Description,
                 a.FamilyScore,
                 a.CoupleScore))
             .ToList();
@@ -118,7 +160,7 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
             dest.AdventureScore,
             highlights,
             attractions,
-            dest.Activities.Where(a => a.IsActive).Select(a => a.Name).ToList(),
+            activities,
             inclusions,
             sampleItinerary);
     }

@@ -17,14 +17,25 @@ import {
   lucideRoute,
   lucideStar,
   lucideX,
+  lucideUtensils,
+  lucideShoppingBag,
+  lucidePlane,
+  lucideCar,
+  lucideRefreshCw,
+  lucideTicket,
 } from '@ng-icons/lucide';
 import { TripApiService } from '../../core/services/trip-api.service';
-import { DestinationProfile } from '../../core/models/trip.models';
+import {
+  DestinationActivity,
+  DestinationDiscovery,
+  DestinationProfile,
+  PlaceCard,
+} from '../../core/models/trip.models';
 
 type DestTab =
   | 'overview'
   | 'itinerary'
-  | 'map'
+  | 'discovery'
   | 'stays'
   | 'inclusions'
   | 'pricing'
@@ -52,6 +63,12 @@ type DestTab =
       lucideRoute,
       lucideStar,
       lucideX,
+      lucideUtensils,
+      lucideShoppingBag,
+      lucidePlane,
+      lucideCar,
+      lucideRefreshCw,
+      lucideTicket,
     }),
   ],
   templateUrl: './destination.html',
@@ -61,16 +78,20 @@ export class DestinationComponent implements OnInit {
   private readonly api = inject(TripApiService);
 
   loading = signal(true);
+  discoveryLoading = signal(false);
   error = signal<string | null>(null);
   profile = signal<DestinationProfile | null>(null);
+  discovery = signal<DestinationDiscovery | null>(null);
   query = signal<Record<string, string>>({});
-  activeTab = signal<DestTab>('inclusions');
+  activeTab = signal<DestTab>('discovery');
+  selectedActivity = signal<DestinationActivity | null>(null);
+  selectedPlace = signal<PlaceCard | null>(null);
 
   readonly tabs: { id: DestTab; label: string; icon: string }[] = [
     { id: 'overview', label: 'Overview', icon: 'lucideClipboardList' },
     { id: 'itinerary', label: 'Itinerary', icon: 'lucideRoute' },
-    { id: 'map', label: 'Map', icon: 'lucideMap' },
-    { id: 'stays', label: 'Hotels & Stays', icon: 'lucideBedDouble' },
+    { id: 'discovery', label: 'Local discovery', icon: 'lucideMapPin' },
+    { id: 'stays', label: 'Hotels & Flights', icon: 'lucideBedDouble' },
     { id: 'inclusions', label: 'Inclusions', icon: 'lucideListChecks' },
     { id: 'pricing', label: 'Dates & Pricing', icon: 'lucideCalendarDays' },
     { id: 'extra', label: 'Extra Info', icon: 'lucideInfo' },
@@ -83,6 +104,7 @@ export class DestinationComponent implements OnInit {
     const q = this.route.snapshot.queryParamMap;
     this.query.set({
       origin: q.get('origin') ?? 'Lahore',
+      destination: q.get('destination') ?? '',
       startDate: q.get('startDate') ?? '',
       endDate: q.get('endDate') ?? '',
       budget: q.get('budget') ?? '2000',
@@ -95,6 +117,7 @@ export class DestinationComponent implements OnInit {
       next: (p) => {
         this.profile.set(p);
         this.loading.set(false);
+        this.loadDiscovery(id, false);
       },
       error: () => {
         this.error.set('Destination not found');
@@ -103,8 +126,51 @@ export class DestinationComponent implements OnInit {
     });
   }
 
+  loadDiscovery(id: number, refresh: boolean): void {
+    this.discoveryLoading.set(true);
+    this.api.getDiscovery(id, refresh).subscribe({
+      next: (d) => {
+        this.discovery.set(d);
+        this.discoveryLoading.set(false);
+      },
+      error: () => {
+        this.discoveryLoading.set(false);
+      },
+    });
+  }
+
   setTab(tab: DestTab): void {
     this.activeTab.set(tab);
+  }
+
+  openActivity(activity: DestinationActivity): void {
+    this.selectedPlace.set(null);
+    this.selectedActivity.set(activity);
+  }
+
+  openPlace(place: PlaceCard): void {
+    this.selectedActivity.set(null);
+    this.selectedPlace.set(place);
+  }
+
+  closeCostPopup(): void {
+    this.selectedActivity.set(null);
+    this.selectedPlace.set(null);
+  }
+
+  /** Cost shown in popup — updates whenever selection changes. */
+  popupCostLabel(): string {
+    const a = this.selectedActivity();
+    if (a) {
+      return `$${a.costMin} – $${a.costMax} ${a.currency} (typical $${a.costTypical})`;
+    }
+    const p = this.selectedPlace();
+    if (p && p.priceTypical != null) {
+      const min = p.priceMin ?? p.priceTypical;
+      const max = p.priceMax ?? p.priceTypical;
+      return `$${min} – $${max} ${p.currency} (typical $${p.priceTypical})`;
+    }
+    return 'Price on request';
   }
 
   estimateLink(profile: DestinationProfile) {

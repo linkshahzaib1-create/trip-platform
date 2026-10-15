@@ -31,4 +31,13 @@ public class Listing : AuditableEntity
     public string? AffiliatePartner { get; set; }
     public string? ImageUrl { get; set; }
     public int PopularityScore { get; set; }
+
+    /// <summary>OpenStreetMap node/way id or other external key.</summary>
+    public string? ExternalId { get; set; }
+
+    /// <summary>OpenStreetMap | Seed | Manual</summary>
+    public string Source { get; set; } = "Seed";
+
+    public string? OpeningHours { get; set; }
+    public DateTime? FetchedAtUtc { get; set; }
 }

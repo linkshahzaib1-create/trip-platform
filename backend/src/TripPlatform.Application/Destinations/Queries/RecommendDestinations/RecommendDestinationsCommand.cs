@@ -12,6 +12,7 @@ public sealed record TravelerAgeDto(int Age);
 
 public sealed record RecommendDestinationsCommand(
     string Origin,
+    string? Destination,
     DateOnly StartDate,
     DateOnly EndDate,
     int Adults,
@@ -43,6 +44,7 @@ public sealed record RecommendationDto(
 
 public sealed record RecommendDestinationsResponse(
     string Origin,
+    string? Destination,
     int Adults,
     int Children,
     IReadOnlyList<int> ChildAges,
@@ -188,13 +190,30 @@ public sealed class RecommendDestinationsCommandHandler
                 score));
         }
 
+        // Boost preferred "To" destination when user set both From and To
+        if (!string.IsNullOrWhiteSpace(request.Destination))
+        {
+            var toName = request.Destination.Trim();
+            recommendations = recommendations
+                .Select(r => r.Destination.Equals(toName, StringComparison.OrdinalIgnoreCase)
+                    ? r with { Score = r.Score + 50, Reasons = r.Reasons.Prepend($"Matches your selected To: {toName}").ToList() }
+                    : r)
+                .ToList();
+        }
+
         var ordered = recommendations
             .OrderByDescending(r => r.Score)
             .ThenBy(r => r.EstimatedCost.Typical)
             .Take(12)
             .ToList();
 
-        return new RecommendDestinationsResponse(origin.Name, adults, children, childAges, ordered);
+        return new RecommendDestinationsResponse(
+            origin.Name,
+            string.IsNullOrWhiteSpace(request.Destination) ? null : request.Destination.Trim(),
+            adults,
+            children,
+            childAges,
+            ordered);
     }
 
     private static List<TravelerAgeDto> BuildTravelers(int adults, IReadOnlyList<int> childAges, IReadOnlyList<TravelerAgeDto>? travelers)

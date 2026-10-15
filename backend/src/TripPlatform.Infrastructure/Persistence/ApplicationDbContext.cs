@@ -28,6 +28,8 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
     public DbSet<Priority> Priorities => Set<Priority>();
     public DbSet<CurrencyRate> CurrencyRates => Set<CurrencyRate>();
     public DbSet<Listing> Listings => Set<Listing>();
+    public DbSet<FlightQuote> FlightQuotes => Set<FlightQuote>();
+    public DbSet<TransportQuote> TransportQuotes => Set<TransportQuote>();
     public DbSet<DestinationInclusion> DestinationInclusions => Set<DestinationInclusion>();
     public DbSet<TripPlan> TripPlans => Set<TripPlan>();
     public DbSet<TripTraveler> TripTravelers => Set<TripTraveler>();
@@ -86,6 +88,27 @@ public sealed class ApplicationDbContext : DbContext, IApplicationDbContext
         modelBuilder.Entity<DestinationInclusion>()
             .Property(i => i.Title)
             .HasMaxLength(300);
+
+        modelBuilder.Entity<Listing>()
+            .HasIndex(l => l.ExternalId);
+
+        modelBuilder.Entity<FlightQuote>()
+            .HasOne(f => f.OriginDestination)
+            .WithMany()
+            .HasForeignKey(f => f.OriginDestinationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FlightQuote>()
+            .HasOne(f => f.TargetDestination)
+            .WithMany()
+            .HasForeignKey(f => f.TargetDestinationId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<TransportQuote>()
+            .HasOne(t => t.Destination)
+            .WithMany()
+            .HasForeignKey(t => t.DestinationId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         foreach (var property in modelBuilder.Model.GetEntityTypes()
                      .SelectMany(t => t.GetProperties())

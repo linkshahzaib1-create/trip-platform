@@ -9,25 +9,42 @@
       Explore Pakistan &amp; beyond — plan the trip that fits your people
     </h1>
     <p class="mt-4 text-slate-200 max-w-2xl text-base sm:text-lg leading-relaxed">
-      Like modern tour sites, start with who’s traveling. Pick origin, dates, budget, adults and children —
-      then get destination ideas, inclusions, and cost estimates tailored to families or couples.
+      Real-time place data from open maps, cached locally for hotels, food, attractions, flights, and transport —
+      with From / To planning and location-based top destinations.
     </p>
-    <a
-      href="#plan"
-      class="btn mt-6 border-0 text-white bg-brand hover:bg-brand-dark"
-    >
-      Plan my trip
-    </a>
+    <a href="#plan" class="btn mt-6 border-0 text-white bg-brand hover:bg-brand-dark">Plan my trip</a>
   </div>
 </section>
 
 <section id="plan" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8 sm:-mt-10 relative z-10 scroll-mt-24">
   <div class="bg-white border border-base-300 shadow-lg rounded-xl p-4 sm:p-6 lg:p-8">
-    <div class="flex flex-wrap gap-4 mb-5 text-sm font-medium border-b border-base-200 pb-3">
-      <span class="text-brand border-b-2 border-brand pb-3 -mb-3.5">Tours &amp; destinations</span>
-      <span class="text-muted">Hotels (via estimate)</span>
-      <span class="text-muted">Travel options</span>
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-5 text-sm font-medium border-b border-base-200 pb-3">
+      <div class="flex flex-wrap gap-4">
+        <span class="text-brand border-b-2 border-brand pb-3 -mb-3.5">Tours &amp; destinations</span>
+        <span class="text-muted">Hotels</span>
+        <span class="text-muted">Flights &amp; transport</span>
+      </div>
+      <button
+        type="button"
+        class="btn btn-sm btn-ghost gap-2"
+        (click)="detectLocation(true)"
+        [disabled]="locating()"
+      >
+        @if (locating()) {
+          <span class="loading loading-spinner loading-xs"></span>
+        } @else {
+          <ng-icon name="lucideLocateFixed" size="16"></ng-icon>
+        }
+        Use my location
+      </button>
     </div>
+
+    @if (locationNote()) {
+      <p class="text-sm text-brand mb-4 flex items-center gap-2">
+        <ng-icon name="lucideNavigation" size="14"></ng-icon>
+        {{ locationNote() }}
+      </p>
+    }
 
     <form class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4" (ngSubmit)="discover()">
       <fieldset class="fieldset p-0">
@@ -35,7 +52,27 @@
           <ng-icon name="lucideMapPin" size="16" class="text-brand"></ng-icon>
           From
         </legend>
-        <input class="input input-bordered w-full" name="origin" [(ngModel)]="origin" required placeholder="Where are you starting from?" />
+        <input
+          class="input input-bordered w-full"
+          name="origin"
+          [(ngModel)]="origin"
+          (blur)="onOriginBlur()"
+          required
+          placeholder="Starting city"
+        />
+      </fieldset>
+
+      <fieldset class="fieldset p-0">
+        <legend class="fieldset-legend flex items-center gap-1 text-ink">
+          <ng-icon name="lucideNavigation" size="16" class="text-brand"></ng-icon>
+          To
+        </legend>
+        <input
+          class="input input-bordered w-full"
+          name="destination"
+          [(ngModel)]="destination"
+          placeholder="Optional — e.g. Murree, Dubai"
+        />
       </fieldset>
 
       <fieldset class="fieldset p-0">
@@ -54,7 +91,7 @@
         <input class="input input-bordered w-full" type="date" name="endDate" [(ngModel)]="endDate" required />
       </fieldset>
 
-      <fieldset class="fieldset p-0">
+      <fieldset class="fieldset p-0 md:col-span-2 xl:col-span-1">
         <legend class="fieldset-legend flex items-center gap-1">
           <ng-icon name="lucideWallet" size="16" class="text-brand"></ng-icon>
           Budget (USD)
@@ -62,7 +99,7 @@
         <input class="input input-bordered w-full" type="number" min="1" name="budget" [(ngModel)]="budget" />
       </fieldset>
 
-      <div class="md:col-span-2 xl:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="md:col-span-2 xl:col-span-3 grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div class="rounded-lg border border-base-300 p-4 bg-soft">
           <div class="flex items-center justify-between gap-3">
             <div>
@@ -160,58 +197,92 @@
       <ng-icon name="lucideHeartHandshake" size="28" class="text-brand mb-3"></ng-icon>
       <h3 class="font-bold text-lg text-ink">Personalized planning</h3>
       <p class="text-sm text-muted mt-2 leading-relaxed">
-        Tailor suggestions to your party — family weekends, honeymoons, or group getaways — with pacing that fits kids or couples.
+        From / To plus adults &amp; children drive recommendations that fit families, couples, or groups.
       </p>
     </div>
     <div class="bg-white border border-base-300 rounded-xl p-6">
       <ng-icon name="lucideShield" size="28" class="text-brand mb-3"></ng-icon>
-      <h3 class="font-bold text-lg text-ink">Clear inclusions</h3>
+      <h3 class="font-bold text-lg text-ink">Open-data prices, cached locally</h3>
       <p class="text-sm text-muted mt-2 leading-relaxed">
-        See what’s included and what’s not — transfers, breakfast, guides, insurance — before you estimate costs.
+        Hotels, restaurants, attractions, and nightlife sync from OpenStreetMap Overpass into our database for fast reuse.
       </p>
     </div>
     <div class="bg-white border border-base-300 rounded-xl p-6">
       <ng-icon name="lucideStar" size="28" class="text-brand mb-3"></ng-icon>
-      <h3 class="font-bold text-lg text-ink">Budget confidence</h3>
+      <h3 class="font-bold text-lg text-ink">Flights &amp; local transport</h3>
       <p class="text-sm text-muted mt-2 leading-relaxed">
-        Get a realistic cost range for stays, food, activities, and travel so surprises stay low.
+        See fare ranges, baggage notes, taxi, metro, and transfer estimates on each destination page.
       </p>
     </div>
   </div>
 </section>
 
 <section id="top-destinations" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 scroll-mt-24">
-  <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
-    <div>
-      <h2 class="text-2xl sm:text-3xl font-bold text-ink">Top destinations</h2>
-      <p class="text-muted mt-1">Popular Pakistan hills &amp; international favorites — open any for inclusions and overview.</p>
+  @if (topLoading()) {
+    <div class="flex justify-center py-10">
+      <span class="loading loading-spinner loading-lg text-brand"></span>
     </div>
-  </div>
-  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-    @for (dest of featured; track dest.id; let i = $index) {
-      <button
-        type="button"
-        class="text-left rounded-xl overflow-hidden border border-base-300 bg-white hover:shadow-md transition-shadow group"
-        (click)="openFeatured(dest)"
-      >
-        @switch (i) {
-          @case (0) { <div class="h-28 bg-gradient-to-br from-sky-300 to-cyan-100"></div> }
-          @case (1) { <div class="h-28 bg-gradient-to-br from-emerald-200 to-teal-100"></div> }
-          @case (2) { <div class="h-28 bg-gradient-to-br from-lime-200 to-green-100"></div> }
-          @case (3) { <div class="h-28 bg-gradient-to-br from-amber-200 to-orange-100"></div> }
-          @case (4) { <div class="h-28 bg-gradient-to-br from-rose-200 to-pink-100"></div> }
-          @case (5) { <div class="h-28 bg-gradient-to-br from-violet-200 to-indigo-100"></div> }
-          @case (6) { <div class="h-28 bg-gradient-to-br from-blue-200 to-sky-100"></div> }
-          @default { <div class="h-28 bg-gradient-to-br from-cyan-200 to-blue-100"></div> }
-        }
-        <div class="p-3">
-          <p class="text-xs uppercase tracking-wide text-muted">{{ dest.region }}</p>
-          <h3 class="font-bold text-ink">{{ dest.name }}</h3>
-          <p class="text-xs text-muted mt-1">{{ dest.blurb }}</p>
+  } @else if (topDest(); as top) {
+    <div class="mb-10">
+      <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-5">
+        <div>
+          <h2 class="text-2xl sm:text-3xl font-bold text-ink">Top destinations near {{ top.originLabel }}</h2>
+          <p class="text-muted mt-1">Location-based picks relevant to your region (Agoda-style nearby focus).</p>
         </div>
-      </button>
-    }
-  </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        @for (dest of top.nearYou; track dest.id; let i = $index) {
+          <button
+            type="button"
+            class="text-left rounded-xl overflow-hidden border border-base-300 bg-white hover:shadow-md transition-shadow"
+            (click)="openFeatured(dest)"
+          >
+            @switch (i % 4) {
+              @case (0) { <div class="h-24 bg-gradient-to-br from-sky-300 to-cyan-100"></div> }
+              @case (1) { <div class="h-24 bg-gradient-to-br from-emerald-200 to-teal-100"></div> }
+              @case (2) { <div class="h-24 bg-gradient-to-br from-lime-200 to-green-100"></div> }
+              @default { <div class="h-24 bg-gradient-to-br from-amber-200 to-orange-100"></div> }
+            }
+            <div class="p-3">
+              <p class="text-xs uppercase tracking-wide text-muted">
+                {{ dest.country }}@if (dest.distanceKm != null) { · {{ dest.distanceKm | number: '1.0-0' }} km }
+              </p>
+              <h3 class="font-bold text-ink">{{ dest.name }}</h3>
+              <p class="text-xs text-muted mt-1">{{ dest.blurb }}</p>
+            </div>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="mb-10">
+      <div class="mb-5">
+        <h2 class="text-2xl sm:text-3xl font-bold text-ink">Top destinations outside Pakistan</h2>
+        <p class="text-muted mt-1">Popular international cities for longer trips and getaways.</p>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        @for (dest of top.outsidePakistan; track dest.id; let i = $index) {
+          <button
+            type="button"
+            class="text-left rounded-xl overflow-hidden border border-base-300 bg-white hover:shadow-md transition-shadow"
+            (click)="openFeatured(dest)"
+          >
+            @switch (i % 4) {
+              @case (0) { <div class="h-24 bg-gradient-to-br from-rose-200 to-pink-100"></div> }
+              @case (1) { <div class="h-24 bg-gradient-to-br from-violet-200 to-indigo-100"></div> }
+              @case (2) { <div class="h-24 bg-gradient-to-br from-blue-200 to-sky-100"></div> }
+              @default { <div class="h-24 bg-gradient-to-br from-cyan-200 to-blue-100"></div> }
+            }
+            <div class="p-3">
+              <p class="text-xs uppercase tracking-wide text-muted">{{ dest.country }}</p>
+              <h3 class="font-bold text-ink">{{ dest.name }}</h3>
+              <p class="text-xs text-muted mt-1">{{ dest.blurb }}</p>
+            </div>
+          </button>
+        }
+      </div>
+    </div>
+  }
 </section>
 
 <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
@@ -219,9 +290,8 @@
     <div>
       <h2 class="text-2xl font-bold text-ink">Just pack and go — we’ll help with the rest</h2>
       <p class="text-muted mt-2 leading-relaxed">
-        Whether it’s a private-style hill trip from Lahore or an international city break, start with adults and children,
-        then refine dates and budget. Inspired by tour planners like
-        <a href="https://zufta.pk/" target="_blank" rel="noopener" class="text-brand underline">Zufta</a>.
+        Set From and To, allow location for smarter nearby picks, then open a destination for live-synced places,
+        activity costs, flights, and transport.
       </p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -243,7 +313,10 @@
   <section id="results" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 scroll-mt-24">
     <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3 mb-6">
       <div>
-        <h2 class="text-2xl sm:text-3xl font-bold text-ink">Recommended from {{ originLabel() }}</h2>
+        <h2 class="text-2xl sm:text-3xl font-bold text-ink">
+          Recommended from {{ originLabel() }}
+          @if (destination) { → {{ destination }} }
+        </h2>
         <p class="text-muted text-sm mt-1">
           Matched for {{ partySummary() }}. Family-friendly spots are boosted when children are included.
         </p>
@@ -319,7 +392,7 @@
     <div class="bg-white border border-base-300 rounded-xl p-8 text-center">
       <h2 class="text-xl font-bold">How many people are going?</h2>
       <p class="text-muted mt-2 max-w-xl mx-auto">
-        Use the adults and children controls above. Adding children prioritizes family-friendly destinations like Murree, Islamabad, and Dubai.
+        Use From / To and the adults &amp; children controls. Allow location to personalize nearby top destinations.
       </p>
     </div>
   </section>

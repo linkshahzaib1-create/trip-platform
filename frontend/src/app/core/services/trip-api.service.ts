@@ -2,10 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import {
+  DestinationDiscovery,
   DestinationMatch,
   DestinationProfile,
   EstimateResponse,
   RecommendResponse,
+  ReverseGeocodeResponse,
+  TopDestinationsResponse,
 } from '../models/trip.models';
 
 function apiBase(): string {
@@ -33,6 +36,30 @@ export class TripApiService {
 
   getDestination(id: number): Observable<DestinationProfile> {
     return this.http.get<DestinationProfile>(`${this.api}/destinations/${id}`);
+  }
+
+  getDiscovery(id: number, refresh = false): Observable<DestinationDiscovery> {
+    return this.http.get<DestinationDiscovery>(`${this.api}/destinations/${id}/discovery`, {
+      params: refresh ? { refresh: 'true' } : {},
+    });
+  }
+
+  getTopDestinations(params: {
+    origin?: string;
+    lat?: number;
+    lng?: number;
+  }): Observable<TopDestinationsResponse> {
+    const query: Record<string, string> = {};
+    if (params.origin) query['origin'] = params.origin;
+    if (params.lat != null) query['lat'] = String(params.lat);
+    if (params.lng != null) query['lng'] = String(params.lng);
+    return this.http.get<TopDestinationsResponse>(`${this.api}/destinations/top`, { params: query });
+  }
+
+  reverseGeocode(lat: number, lng: number): Observable<ReverseGeocodeResponse> {
+    return this.http.get<ReverseGeocodeResponse>(`${this.api}/geo/reverse`, {
+      params: { lat: String(lat), lng: String(lng) },
+    });
   }
 
   recommend(body: unknown): Observable<RecommendResponse> {

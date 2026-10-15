@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using TripPlatform.Application.Common.Interfaces;
+using TripPlatform.Infrastructure.OpenData;
 using TripPlatform.Infrastructure.Persistence;
 using TripPlatform.Infrastructure.Persistence.Seed;
 
@@ -42,6 +43,21 @@ public static class DependencyInjection
 
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
         services.AddScoped<DemoDataSeeder>();
+
+        services.AddHttpClient<IGeocodingService, NominatimGeocodingService>(client =>
+        {
+            client.BaseAddress = new Uri("https://nominatim.openstreetmap.org/");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("TripPlatform/1.0 (travel-cost-estimation; contact@tripplatform.local)");
+            client.Timeout = TimeSpan.FromSeconds(20);
+        });
+
+        services.AddHttpClient<IPlaceSyncService, OverpassPlaceSyncService>(client =>
+        {
+            client.BaseAddress = new Uri("https://overpass-api.de/api/interpreter");
+            client.DefaultRequestHeaders.UserAgent.ParseAdd("TripPlatform/1.0 (travel-cost-estimation)");
+            client.Timeout = TimeSpan.FromSeconds(60);
+        });
+
         return services;
     }
 

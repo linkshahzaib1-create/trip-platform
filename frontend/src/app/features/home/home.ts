@@ -1,4 +1,4 @@
-import { AfterViewInit, Component, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -21,17 +21,11 @@ import {
   lucideShield,
   lucideHeartHandshake,
   lucideStar,
+  lucideLocateFixed,
+  lucideNavigation,
 } from '@ng-icons/lucide';
 import { TripApiService } from '../../core/services/trip-api.service';
-import { Recommendation } from '../../core/models/trip.models';
-
-interface FeaturedDestination {
-  id: number;
-  name: string;
-  region: string;
-  blurb: string;
-  tone: string;
-}
+import { Recommendation, TopDestinationCard, TopDestinationsResponse } from '../../core/models/trip.models';
 
 @Component({
   selector: 'app-home',
@@ -56,16 +50,19 @@ interface FeaturedDestination {
       lucideShield,
       lucideHeartHandshake,
       lucideStar,
+      lucideLocateFixed,
+      lucideNavigation,
     }),
   ],
   templateUrl: './home.html',
 })
-export class HomeComponent implements AfterViewInit {
+export class HomeComponent implements OnInit, AfterViewInit {
   private readonly api = inject(TripApiService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
 
   origin = 'Lahore';
+  destination = '';
   startDate = '2026-12-10';
   endDate = '2026-12-15';
   adults = 2;
@@ -75,22 +72,14 @@ export class HomeComponent implements AfterViewInit {
   priorities = 'Culture,Comfort,Family';
 
   loading = signal(false);
+  locating = signal(false);
+  locationNote = signal<string | null>(null);
   error = signal<string | null>(null);
   recommendations = signal<Recommendation[]>([]);
   originLabel = signal('Lahore');
   partySummary = signal('');
-
-  /** Featured spots inspired by popular Pakistan + international tour catalogs */
-  readonly featured: FeaturedDestination[] = [
-    { id: 4, name: 'Hunza', region: 'Gilgit-Baltistan', blurb: 'Valleys, forts & mountain roads', tone: 'bg-gradient-to-br from-sky-300 to-cyan-100' },
-    { id: 3, name: 'Murree', region: 'Punjab hills', blurb: 'Family weekends & cool weather', tone: 'bg-gradient-to-br from-emerald-200 to-teal-100' },
-    { id: 2, name: 'Islamabad', region: 'Capital region', blurb: 'Easy pacing, parks & culture', tone: 'bg-gradient-to-br from-lime-200 to-green-100' },
-    { id: 5, name: 'Dubai', region: 'UAE', blurb: 'City lights, malls & desert', tone: 'bg-gradient-to-br from-amber-200 to-orange-100' },
-    { id: 6, name: 'Istanbul', region: 'Turkey', blurb: 'History, food & Bosphorus', tone: 'bg-gradient-to-br from-rose-200 to-pink-100' },
-    { id: 7, name: 'Bangkok', region: 'Thailand', blurb: 'Temples, street food & markets', tone: 'bg-gradient-to-br from-violet-200 to-indigo-100' },
-    { id: 9, name: 'Paris', region: 'France', blurb: 'Romance, museums & cafés', tone: 'bg-gradient-to-br from-blue-200 to-sky-100' },
-    { id: 8, name: 'Maldives', region: 'Indian Ocean', blurb: 'Overwater calm & honeymoon vibe', tone: 'bg-gradient-to-br from-cyan-200 to-blue-100' },
-  ];
+  topDest = signal<TopDestinationsResponse | null>(null);
+  topLoading = signal(true);
 
   readonly regions = [
     {
@@ -107,11 +96,70 @@ export class HomeComponent implements AfterViewInit {
     },
   ];
 
+  ngOnInit(): void {
+    this.detectLocation(false);
+    this.loadTopDestinations();
+  }
+
   ngAfterViewInit(): void {
     const fragment = this.route.snapshot.fragment;
     if (fragment) {
       setTimeout(() => document.getElementById(fragment)?.scrollIntoView({ behavior: 'smooth' }), 50);
     }
+  }
+
+  detectLocation(userInitiated: boolean): void {
+    if (!navigator.geolocation) {
+      if (userInitiated) this.locationNote.set('Geolocation is not supported in this browser.');
+      return;
+    }
+
+    this.locating.set(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        this.api.reverseGeocode(pos.coords.latitude, pos.coords.longitude).subscribe({
+          next: (geo) => {
+            const city = geo.matchedDestination?.name ?? geo.city;
+            this.origin = city;
+            this.locationNote.set(`Using your current city: ${city}`);
+            this.locating.set(false);
+            this.loadTopDestinations(pos.coords.latitude, pos.coords.longitude);
+          },
+          error: () => {
+            this.locating.set(false);
+            if (userInitiated) this.locationNote.set('Could not resolve your city from coordinates.');
+            this.loadTopDestinations(pos.coords.latitude, pos.coords.longitude);
+          },
+        });
+      },
+      () => {
+        this.locating.set(false);
+        if (userInitiated) {
+          this.locationNote.set('Location permission denied — enter your city in From.');
+        }
+        this.loadTopDestinations();
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 },
+    );
+  }
+
+  loadTopDestinations(lat?: number, lng?: number): void {
+    this.topLoading.set(true);
+    this.api
+      .getTopDestinations({
+        origin: this.origin || undefined,
+        lat,
+        lng,
+      })
+      .subscribe({
+        next: (res) => {
+          this.topDest.set(res);
+          this.topLoading.set(false);
+        },
+        error: () => {
+          this.topLoading.set(false);
+        },
+      });
   }
 
   syncChildren(): void {
@@ -137,6 +185,10 @@ export class HomeComponent implements AfterViewInit {
     }
   }
 
+  onOriginBlur(): void {
+    this.loadTopDestinations();
+  }
+
   discover(): void {
     this.syncChildren();
     this.loading.set(true);
@@ -145,6 +197,7 @@ export class HomeComponent implements AfterViewInit {
     this.api
       .recommend({
         origin: this.origin,
+        destination: this.destination?.trim() || null,
         startDate: this.startDate,
         endDate: this.endDate,
         adults: this.adults,
@@ -173,10 +226,12 @@ export class HomeComponent implements AfterViewInit {
       });
   }
 
-  openFeatured(dest: FeaturedDestination): void {
+  openFeatured(dest: TopDestinationCard): void {
+    this.destination = dest.name;
     void this.router.navigate(['/destinations', dest.id], {
       queryParams: {
         origin: this.origin,
+        destination: dest.name,
         startDate: this.startDate,
         endDate: this.endDate,
         budget: this.budget,
@@ -191,6 +246,7 @@ export class HomeComponent implements AfterViewInit {
     void this.router.navigate(['/destinations', rec.destinationId], {
       queryParams: {
         origin: this.originLabel(),
+        destination: rec.destination,
         startDate: this.startDate,
         endDate: this.endDate,
         budget: this.budget,

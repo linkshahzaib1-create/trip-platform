@@ -24,7 +24,6 @@
       </div>
     </div>
 
-    <!-- Tripsite-style destination tabs -->
     <nav
       class="flex gap-1 overflow-x-auto border-b border-base-300 bg-white sticky top-0 z-10 -mx-4 px-4 sm:mx-0 sm:px-0"
       aria-label="Destination sections"
@@ -55,7 +54,6 @@
               <h2 class="text-xl font-bold mb-3">Overview</h2>
               <p class="text-muted leading-relaxed">
                 {{ p.description || ('Discover ' + p.name + ' with a personalized itinerary based on your travel party.') }}
-                Our planner balances sightseeing, food, and pacing for your group — including child-friendly options when kids are traveling.
               </p>
             </div>
             <div>
@@ -65,15 +63,41 @@
                   <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-base-200 pb-3">
                     <div>
                       <p class="font-medium">{{ a.name }}</p>
-                      <p class="text-sm text-muted">{{ a.category }} · {{ a.durationMinutes }} min</p>
+                      <p class="text-sm text-muted">
+                        {{ a.category }} · {{ a.durationMinutes }} min
+                        @if (a.openingHours) { · {{ a.openingHours }} }
+                      </p>
                     </div>
                     <div class="text-sm text-muted">
-                      From ${{ a.entryCostTypical | number: '1.0-0' }}
-                      · Family {{ a.familyScore }}/5
+                      ${{ a.entryCostMin | number: '1.0-0' }}–${{ a.entryCostMax | number: '1.0-0' }}
                     </div>
                   </div>
                 } @empty {
                   <p class="text-muted">Attractions will appear as this destination is enriched.</p>
+                }
+              </div>
+            </div>
+
+            <div>
+              <h3 class="font-semibold mb-3 flex items-center gap-2">
+                <ng-icon name="lucideTicket" size="18" class="text-brand"></ng-icon>
+                Activities — tap for live cost
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @for (act of p.activities; track act.id) {
+                  <button
+                    type="button"
+                    class="text-left rounded-lg border border-base-300 p-4 hover:border-brand hover:shadow-sm transition"
+                    (click)="openActivity(act)"
+                  >
+                    <p class="font-medium text-ink">{{ act.name }}</p>
+                    <p class="text-xs text-muted mt-1">{{ act.category }} · {{ act.durationMinutes }} min</p>
+                    <p class="text-sm font-semibold text-brand mt-2">
+                      Typical ${{ act.costTypical | number: '1.0-0' }}
+                    </p>
+                  </button>
+                } @empty {
+                  <p class="text-muted text-sm">No curated activities yet — check Local discovery.</p>
                 }
               </div>
             </div>
@@ -94,38 +118,211 @@
           </section>
         }
 
-        @if (activeTab() === 'map') {
-          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
-            <h2 class="text-xl font-bold mb-3">Map</h2>
-            <p class="text-muted mb-4">Key stops and attractions for {{ p.name }}.</p>
-            <div class="rounded-lg bg-panel border border-base-300 h-64 flex items-center justify-center text-muted">
-              Interactive map coming soon — use Overview attractions as your planning base.
+        @if (activeTab() === 'discovery') {
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7 space-y-8">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 class="text-xl font-bold">Local discovery</h2>
+                <p class="text-sm text-muted mt-1">
+                  Food, attractions, shopping &amp; nightlife — synced from OpenStreetMap and cached locally.
+                  @if (discovery()?.lastSyncedUtc) {
+                    Last sync {{ discovery()!.lastSyncedUtc | date: 'medium' }}
+                  }
+                </p>
+              </div>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline gap-1"
+                [disabled]="discoveryLoading()"
+                (click)="loadDiscovery(p.id, true)"
+              >
+                @if (discoveryLoading()) {
+                  <span class="loading loading-spinner loading-xs"></span>
+                } @else {
+                  <ng-icon name="lucideRefreshCw" size="14"></ng-icon>
+                }
+                Refresh open data
+              </button>
             </div>
+
+            @if (discoveryLoading() && !discovery()) {
+              <div class="flex justify-center py-10">
+                <span class="loading loading-spinner text-brand"></span>
+              </div>
+            } @else if (discovery(); as d) {
+              <div>
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                  <ng-icon name="lucideUtensils" size="18" class="text-brand"></ng-icon>
+                  Famous food &amp; restaurants
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (place of d.restaurants; track place.id) {
+                    <button type="button" class="text-left rounded-lg border border-base-300 p-3 hover:border-brand" (click)="openPlace(place)">
+                      <p class="font-medium">{{ place.name }}</p>
+                      <p class="text-xs text-muted">{{ place.cuisine || place.neighborhood || 'Local food' }}</p>
+                      @if (place.priceTypical != null) {
+                        <p class="text-sm text-brand mt-1">~${{ place.priceTypical | number: '1.0-0' }}/meal</p>
+                      }
+                    </button>
+                  } @empty {
+                    <p class="text-sm text-muted">No restaurants cached yet — try Refresh open data.</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-semibold mb-3">Tourist attractions</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (place of d.attractions; track place.id) {
+                    <button type="button" class="text-left rounded-lg border border-base-300 p-3 hover:border-brand" (click)="openPlace(place)">
+                      <p class="font-medium">{{ place.name }}</p>
+                      <p class="text-xs text-muted">{{ place.openingHours || 'See hours on site' }}</p>
+                      @if (place.priceTypical != null) {
+                        <p class="text-sm text-brand mt-1">Entry ~${{ place.priceTypical | number: '1.0-0' }}</p>
+                      }
+                    </button>
+                  } @empty {
+                    <p class="text-sm text-muted">Using curated attractions from Overview until OSM sync completes.</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                  <ng-icon name="lucideShoppingBag" size="18" class="text-brand"></ng-icon>
+                  Shopping &amp; markets
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (place of d.shopping; track place.id) {
+                    <button type="button" class="text-left rounded-lg border border-base-300 p-3 hover:border-brand" (click)="openPlace(place)">
+                      <p class="font-medium">{{ place.name }}</p>
+                      <p class="text-xs text-muted">{{ place.neighborhood || 'Shopping' }}</p>
+                    </button>
+                  } @empty {
+                    <p class="text-sm text-muted">Shopping POIs appear after open-data refresh.</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-semibold mb-3">Nightlife &amp; entertainment</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (place of d.nightlife; track place.id) {
+                    <button type="button" class="text-left rounded-lg border border-base-300 p-3 hover:border-brand" (click)="openPlace(place)">
+                      <p class="font-medium">{{ place.name }}</p>
+                      @if (place.priceTypical != null) {
+                        <p class="text-sm text-brand mt-1">~${{ place.priceTypical | number: '1.0-0' }}</p>
+                      }
+                    </button>
+                  } @empty {
+                    <p class="text-sm text-muted">Nightlife venues appear after open-data refresh.</p>
+                  }
+                </div>
+              </div>
+
+              <div>
+                <h3 class="font-semibold mb-3 flex items-center gap-2">
+                  <ng-icon name="lucideTicket" size="18" class="text-brand"></ng-icon>
+                  Bookable activities (dynamic cost)
+                </h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  @for (act of d.activities; track act.id) {
+                    <button type="button" class="text-left rounded-lg border border-base-300 p-3 hover:border-brand" (click)="openActivity(act)">
+                      <p class="font-medium">{{ act.name }}</p>
+                      <p class="text-xs text-muted">{{ act.category }} · {{ act.durationMinutes }} min</p>
+                      <p class="text-sm font-semibold text-brand mt-1">${{ act.costTypical | number: '1.0-0' }} typical</p>
+                    </button>
+                  }
+                </div>
+              </div>
+            }
           </section>
         }
 
         @if (activeTab() === 'stays') {
-          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
-            <h2 class="text-xl font-bold mb-3">Hotels &amp; stays</h2>
-            <p class="text-muted leading-relaxed">
-              Stay recommendations are matched to your party size and budget when you run a trip estimate.
-              Family rooms and connecting options are preferred when children are traveling.
-            </p>
-            @if (p.activities.length) {
-              <h3 class="font-semibold mt-5 mb-2">Suggested activities</h3>
-              <ul class="list-disc pl-5 text-muted space-y-1">
-                @for (act of p.activities; track act) {
-                  <li>{{ act }}</li>
+          <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7 space-y-8">
+            <div>
+              <h2 class="text-xl font-bold mb-2 flex items-center gap-2">
+                <ng-icon name="lucideBedDouble" size="20" class="text-brand"></ng-icon>
+                Hotels &amp; stays
+              </h2>
+              <p class="text-sm text-muted mb-4">Current rate estimates with amenities when available from open data / cost profiles.</p>
+              <div class="space-y-3">
+                @for (hotel of discovery()?.hotels ?? []; track hotel.id) {
+                  <button type="button" class="w-full text-left rounded-lg border border-base-300 p-4 hover:border-brand" (click)="openPlace(hotel)">
+                    <div class="flex justify-between gap-3">
+                      <div>
+                        <p class="font-medium">{{ hotel.name }}</p>
+                        <p class="text-xs text-muted">
+                          @if (hotel.starRating) { {{ hotel.starRating }}★ · }
+                          {{ hotel.amenities || hotel.neighborhood || 'Hotel' }}
+                        </p>
+                      </div>
+                      @if (hotel.priceTypical != null) {
+                        <p class="font-semibold text-brand whitespace-nowrap">
+                          ${{ hotel.priceTypical | number: '1.0-0' }}<span class="text-xs text-muted font-normal">/night</span>
+                        </p>
+                      }
+                    </div>
+                  </button>
+                } @empty {
+                  <p class="text-muted text-sm">Open Local discovery → Refresh open data to pull nearby hotels from OSM.</p>
                 }
-              </ul>
-            }
+              </div>
+            </div>
+
+            <div>
+              <h3 class="font-bold mb-3 flex items-center gap-2">
+                <ng-icon name="lucidePlane" size="18" class="text-brand"></ng-icon>
+                Flights
+              </h3>
+              <div class="space-y-3">
+                @for (f of discovery()?.flights ?? []; track f.id) {
+                  <div class="rounded-lg border border-base-300 p-4">
+                    <p class="font-medium">{{ f.from }} → {{ f.to }}</p>
+                    <p class="text-xs text-muted">{{ f.airline }} · {{ f.cabinClass }} · {{ f.scheduleNotes }}</p>
+                    <p class="text-sm font-semibold mt-2">
+                      ${{ f.priceMin | number: '1.0-0' }}–${{ f.priceMax | number: '1.0-0' }}
+                      <span class="text-muted font-normal">(typical ${{ f.priceTypical | number: '1.0-0' }})</span>
+                    </p>
+                    @if (f.baggageNotes) {
+                      <p class="text-xs text-muted mt-1">{{ f.baggageNotes }}</p>
+                    }
+                  </div>
+                } @empty {
+                  <p class="text-sm text-muted">Flight quotes appear once routes are cached for this city.</p>
+                }
+              </div>
+            </div>
+
+            <div>
+              <h3 class="font-bold mb-3 flex items-center gap-2">
+                <ng-icon name="lucideCar" size="18" class="text-brand"></ng-icon>
+                Local transportation
+              </h3>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                @for (t of discovery()?.transport ?? []; track t.id) {
+                  <div class="rounded-lg border border-base-300 p-4">
+                    <p class="text-xs uppercase text-muted">{{ t.mode }}</p>
+                    <p class="font-medium">{{ t.title }}</p>
+                    <p class="text-sm text-brand mt-1">
+                      ${{ t.priceMin | number: '1.0-0' }}–${{ t.priceMax | number: '1.0-0' }}
+                    </p>
+                    @if (t.details) {
+                      <p class="text-xs text-muted mt-1">{{ t.details }}</p>
+                    }
+                  </div>
+                } @empty {
+                  <p class="text-sm text-muted">Transport quotes will populate on first discovery sync.</p>
+                }
+              </div>
+            </div>
           </section>
         }
 
         @if (activeTab() === 'inclusions') {
           <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-10">
-              <!-- What's Included -->
               <div>
                 <h2 class="text-2xl font-bold text-ink mb-5">What's Included</h2>
                 @for (group of p.inclusions?.included ?? []; track group.packageTier) {
@@ -145,12 +342,8 @@
                       }
                     </ul>
                   </div>
-                } @empty {
-                  <p class="text-muted text-sm">Inclusion details are being prepared for this destination.</p>
                 }
               </div>
-
-              <!-- What's Not Included -->
               <div>
                 <h2 class="text-2xl font-bold text-ink mb-5">What's Not Included</h2>
                 @for (group of p.inclusions?.notIncluded ?? []; track group.packageTier) {
@@ -161,7 +354,7 @@
                         <li class="flex gap-2.5 text-sm leading-relaxed">
                           <ng-icon name="lucideX" size="18" class="text-error shrink-0 mt-0.5"></ng-icon>
                           <span [class.text-error]="item.isCritical" [class.font-semibold]="item.isCritical" [class.text-ink]="!item.isCritical">
-                            <span>{{ item.title }}</span>
+                            {{ item.title }}
                             @if (item.details) {
                               <span [class.text-error]="item.isCritical" [class.text-muted]="!item.isCritical"> — {{ item.details }}</span>
                             }
@@ -170,8 +363,6 @@
                       }
                     </ul>
                   </div>
-                } @empty {
-                  <p class="text-muted text-sm">Exclusion details are being prepared for this destination.</p>
                 }
               </div>
             </div>
@@ -181,14 +372,8 @@
         @if (activeTab() === 'pricing') {
           <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
             <h2 class="text-xl font-bold mb-3">Dates &amp; pricing</h2>
-            <p class="text-muted mb-4">
-              Get a personalized cost range for your dates, adults, and children. Estimates cover travel, stays, food, and activities.
-            </p>
-            <a
-              class="btn border-0 text-white bg-brand hover:bg-brand-dark"
-              [routerLink]="['/results']"
-              [queryParams]="estimateLink(p)"
-            >
+            <p class="text-muted mb-4">Get a personalized cost range for your From / To dates and party size.</p>
+            <a class="btn border-0 text-white bg-brand hover:bg-brand-dark" [routerLink]="['/results']" [queryParams]="estimateLink(p)">
               Estimate this trip
             </a>
           </section>
@@ -198,10 +383,9 @@
           <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
             <h2 class="text-xl font-bold mb-3">Extra info</h2>
             <ul class="space-y-2 text-muted text-sm">
-              <li>Travel insurance is strongly recommended for all travelers.</li>
-              <li>Tourist taxes and local transit tickets are typically paid on arrival.</li>
-              <li>Confirm arrival details early so transfers can be arranged.</li>
-              <li>Pack light — extra luggage may incur fees on multi-stop trips.</li>
+              <li>Place data is refreshed from OpenStreetMap Overpass and stored in our database.</li>
+              <li>Flight and transport figures are cached estimates — confirm with carriers before booking.</li>
+              <li>Travel insurance is strongly recommended.</li>
             </ul>
           </section>
         }
@@ -217,14 +401,13 @@
               <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-violet-200 to-indigo-100"></div>
               <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-slate-300 to-stone-200"></div>
             </div>
-            <p class="text-sm text-muted mt-3">Photo gallery placeholders — destination media will appear here.</p>
           </section>
         }
 
         @if (activeTab() === 'reviews') {
           <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
             <h2 class="text-xl font-bold mb-3">Reviews</h2>
-            <p class="text-muted">Traveler reviews will appear here as the platform grows. Suitability scores on the right reflect our current destination model.</p>
+            <p class="text-muted">Traveler reviews will appear here as the platform grows.</p>
           </section>
         }
       </div>
@@ -263,3 +446,45 @@
     </div>
   }
 </div>
+
+<!-- Dynamic cost popup — updates when selection changes -->
+@if (selectedActivity() || selectedPlace()) {
+  <div class="modal modal-open" role="dialog" aria-modal="true">
+    <div class="modal-box">
+      <button type="button" class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2" (click)="closeCostPopup()">
+        <ng-icon name="lucideX" size="16"></ng-icon>
+      </button>
+      @if (selectedActivity(); as act) {
+        <h3 class="font-bold text-lg">{{ act.name }}</h3>
+        <p class="text-sm text-muted mt-1">{{ act.category }} · {{ act.durationMinutes }} minutes · {{ act.budgetLevel }}</p>
+        @if (act.description) {
+          <p class="mt-3 text-sm">{{ act.description }}</p>
+        }
+        <div class="mt-4 rounded-lg bg-panel p-4">
+          <p class="text-xs uppercase tracking-wide text-muted">Live activity cost</p>
+          <p class="text-xl font-bold text-brand mt-1">{{ popupCostLabel() }}</p>
+          <p class="text-xs text-muted mt-2">Cost updates automatically when you select a different activity.</p>
+        </div>
+      } @else if (selectedPlace(); as place) {
+        <h3 class="font-bold text-lg">{{ place.name }}</h3>
+        <p class="text-sm text-muted mt-1">{{ place.listingType }} · {{ place.source }}</p>
+        @if (place.description || place.amenities) {
+          <p class="mt-3 text-sm">{{ place.description || place.amenities }}</p>
+        }
+        @if (place.openingHours) {
+          <p class="text-sm text-muted mt-2">Hours: {{ place.openingHours }}</p>
+        }
+        <div class="mt-4 rounded-lg bg-panel p-4">
+          <p class="text-xs uppercase tracking-wide text-muted">Estimated price</p>
+          <p class="text-xl font-bold text-brand mt-1">{{ popupCostLabel() }}</p>
+        </div>
+      }
+      <div class="modal-action">
+        <button type="button" class="btn" (click)="closeCostPopup()">Close</button>
+      </div>
+    </div>
+    <form method="dialog" class="modal-backdrop">
+      <button type="button" (click)="closeCostPopup()">close</button>
+    </form>
+  </div>
+}
