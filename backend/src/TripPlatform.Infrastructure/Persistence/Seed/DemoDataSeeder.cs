@@ -311,7 +311,24 @@ public sealed class DemoDataSeeder
                 FamilyFriendly = true,
                 AffiliatePartner = "Booking.com",
                 AffiliateUrl = "https://www.booking.com/",
+                ImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Dubai_Marina_Skyline.jpg/640px-Dubai_Marina_Skyline.jpg",
+                Source = "Seed",
                 PopularityScore = 88
+            },
+            new Listing
+            {
+                DestinationId = dubai.Id,
+                ListingType = "Apartment",
+                Name = "Downtown Serviced Apartment",
+                PriceMin = 70, PriceTypical = 110, PriceMax = 160,
+                Rating = 4.3m, ReviewCount = 640, StarRating = 4,
+                FamilyFriendly = true,
+                AmenitiesCsv = "Kitchen, Wi‑Fi, Washer",
+                AffiliatePartner = "Booking.com",
+                AffiliateUrl = "https://www.booking.com/",
+                ImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Burj_Khalifa.jpg/640px-Burj_Khalifa.jpg",
+                Source = "Seed",
+                PopularityScore = 82
             },
             new Listing
             {
@@ -322,6 +339,7 @@ public sealed class DemoDataSeeder
                 PriceMin = 8, PriceTypical = 15, PriceMax = 30,
                 Rating = 4.6m, ReviewCount = 900,
                 ChildFriendly = true,
+                Source = "Seed",
                 PopularityScore = 91
             },
             new Listing
@@ -334,7 +352,23 @@ public sealed class DemoDataSeeder
                 FamilyFriendly = true,
                 AffiliatePartner = "Agoda",
                 AffiliateUrl = "https://www.agoda.com/",
+                Source = "Seed",
                 PopularityScore = 84
+            },
+            new Listing
+            {
+                DestinationId = paris.Id,
+                ListingType = "Home",
+                Name = "Marais Charming Home Stay",
+                PriceMin = 95, PriceTypical = 140, PriceMax = 210,
+                Rating = 4.7m, ReviewCount = 310,
+                FamilyFriendly = true,
+                AmenitiesCsv = "Full kitchen, Self check-in",
+                AffiliateUrl = "https://www.booking.com/",
+                AffiliatePartner = "Booking.com",
+                ImageUrl = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/640px-Tour_Eiffel_Wikimedia_Commons.jpg",
+                Source = "Seed",
+                PopularityScore = 86
             });
 
         await SeedInclusionsForDestinationsAsync(

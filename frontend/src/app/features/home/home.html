@@ -24,18 +24,81 @@
         <span class="text-muted">Hotels</span>
         <span class="text-muted">Flights &amp; transport</span>
       </div>
+      <div class="flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="btn btn-sm btn-ghost gap-2"
+          (click)="detectLocation(true)"
+          [disabled]="locating()"
+        >
+          @if (locating()) {
+            <span class="loading loading-spinner loading-xs"></span>
+          } @else {
+            <ng-icon name="lucideLocateFixed" size="16"></ng-icon>
+          }
+          Use my location
+        </button>
+        <button type="button" class="btn btn-sm border-0 text-white bg-brand hover:bg-brand-dark" (click)="startWizard()">
+          5–8 click wizard
+        </button>
+      </div>
+    </div>
+
+    @if (categories().length) {
+      <div class="mb-5">
+        <p class="text-sm font-semibold text-ink mb-2">Who’s traveling?</p>
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-2">
+          @for (cat of categories(); track cat.id) {
+            <button
+              type="button"
+              class="text-left rounded-lg border px-3 py-2 text-sm transition"
+              [class.border-brand]="selectedCategory()?.id === cat.id"
+              [class.bg-orange-50]="selectedCategory()?.id === cat.id"
+              [class.border-base-300]="selectedCategory()?.id !== cat.id"
+              (click)="selectCategory(cat)"
+            >
+              <span class="font-medium text-ink leading-snug">{{ cat.name }}</span>
+            </button>
+          }
+        </div>
+        @if (selectedCategory(); as cat) {
+          <div class="flex flex-wrap gap-2 mt-3">
+            @for (sub of cat.subcategories; track sub.id) {
+              <button
+                type="button"
+                class="btn btn-xs"
+                [class.btn-warning]="selectedSubcategoryCode() === sub.code"
+                [class.btn-ghost]="selectedSubcategoryCode() !== sub.code"
+                (click)="selectedSubcategoryCode.set(sub.code)"
+              >
+                {{ sub.name }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="mb-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
       <button
         type="button"
-        class="btn btn-sm btn-ghost gap-2"
-        (click)="detectLocation(true)"
-        [disabled]="locating()"
+        class="text-left rounded-lg border p-3 text-sm"
+        [class.border-brand]="planningMode() === 'AiBudget'"
+        [class.bg-orange-50]="planningMode() === 'AiBudget'"
+        (click)="planningMode.set('AiBudget')"
       >
-        @if (locating()) {
-          <span class="loading loading-spinner loading-xs"></span>
-        } @else {
-          <ng-icon name="lucideLocateFixed" size="16"></ng-icon>
-        }
-        Use my location
+        <p class="font-semibold">AI Budget Mode</p>
+        <p class="text-xs text-muted mt-1">We shape the trip to fit your total budget.</p>
+      </button>
+      <button
+        type="button"
+        class="text-left rounded-lg border p-3 text-sm"
+        [class.border-brand]="planningMode() === 'Custom'"
+        [class.bg-orange-50]="planningMode() === 'Custom'"
+        (click)="planningMode.set('Custom')"
+      >
+        <p class="font-semibold">Custom Mode</p>
+        <p class="text-xs text-muted mt-1">Pick flights, stays, and activities yourself.</p>
       </button>
     </div>
 
@@ -379,7 +442,8 @@
                   Tour overview
                   <ng-icon name="lucideArrowRight" size="16"></ng-icon>
                 </button>
-                <button type="button" class="btn btn-sm btn-outline" (click)="openEstimate(rec)">Get cost estimate</button>
+                <button type="button" class="btn btn-sm btn-outline" (click)="openWizardFor(rec)">Plan in wizard</button>
+                <button type="button" class="btn btn-sm btn-ghost" (click)="openEstimate(rec)">Quick estimate</button>
               </div>
             </aside>
           </div>

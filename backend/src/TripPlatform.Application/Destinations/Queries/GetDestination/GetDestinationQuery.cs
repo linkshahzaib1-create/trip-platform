@@ -1,5 +1,6 @@
 using MediatR;
 using Microsoft.EntityFrameworkCore;
+using TripPlatform.Application.Common;
 using TripPlatform.Application.Common.Interfaces;
 
 namespace TripPlatform.Application.Destinations.Queries.GetDestination;
@@ -63,7 +64,9 @@ public sealed record DestinationProfileDto(
     IReadOnlyList<DestinationAttractionDto> Attractions,
     IReadOnlyList<DestinationActivityDto> Activities,
     DestinationInclusionsDto Inclusions,
-    IReadOnlyList<string> SampleItinerary);
+    IReadOnlyList<string> SampleItinerary,
+    IReadOnlyList<string> Photos,
+    string? HeroImageUrl);
 
 public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQuery, DestinationProfileDto?>
 {
@@ -144,7 +147,8 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
         }
 
         var inclusions = BuildInclusions(dest.Inclusions.Where(i => i.IsActive).ToList());
-        var sampleItinerary = BuildSampleItinerary(dest.Name, attractions.Select(a => a.Name).Take(3).ToList());
+        var sampleItinerary = BuildSampleItinerary(dest.Name, attractions.Select(a => a.Name).Take(3).ToList(), daysHint: 14);
+        var photos = DestinationMediaCatalog.GetPhotos(dest.Slug);
 
         return new DestinationProfileDto(
             dest.Id,
@@ -162,7 +166,9 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
             attractions,
             activities,
             inclusions,
-            sampleItinerary);
+            sampleItinerary,
+            photos,
+            photos.FirstOrDefault());
     }
 
     private static DestinationInclusionsDto BuildInclusions(IReadOnlyList<Domain.Entities.DestinationInclusion> rows)
@@ -192,17 +198,26 @@ public sealed class GetDestinationQueryHandler : IRequestHandler<GetDestinationQ
         _ => 9
     };
 
-    private static List<string> BuildSampleItinerary(string name, IReadOnlyList<string> attractionNames)
+    private static List<string> BuildSampleItinerary(string name, IReadOnlyList<string> attractionNames, int daysHint)
     {
         var day2 = attractionNames.ElementAtOrDefault(0) ?? $"{name} highlights";
         var day3 = attractionNames.ElementAtOrDefault(1) ?? "Local food and markets";
-        return
-        [
+        var list = new List<string>
+        {
             $"Day 1 — Arrival in {name}, transfer & check-in, evening neighborhood walk",
             $"Day 2 — {day2}, lunch nearby, optional evening activity",
             $"Day 3 — {day3}, free time / shopping",
             $"Day 4 — Flexible day for family pacing or premium experiences",
             $"Final day — Breakfast, last visit, departure transfer"
-        ];
+        };
+
+        if (daysHint >= 10)
+        {
+            list.Insert(4, $"Days 5–7 — Core {name} cultural circuit (heritage sites, food walks)");
+            list.Insert(5, $"Days 8–11 — Extended side trips / craft markets / nearby heritage day trips");
+            list.Insert(6, $"Days 12–13 — Shopping & farewell experiences in {name}");
+        }
+
+        return list;
     }
 }

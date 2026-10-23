@@ -10,7 +10,7 @@ public class Listing : AuditableEntity
 {
     public int DestinationId { get; set; }
     public Destination? Destination { get; set; }
-    public string ListingType { get; set; } = "Hotel"; // Hotel | Restaurant | Attraction | Experience
+    public string ListingType { get; set; } = "Hotel"; // Hotel | Apartment | Home | Restaurant | Attraction | Experience | Shopping | Nightlife
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public string? Neighborhood { get; set; }

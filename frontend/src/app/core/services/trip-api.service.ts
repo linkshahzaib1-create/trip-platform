@@ -9,6 +9,7 @@ import {
   RecommendResponse,
   ReverseGeocodeResponse,
   TopDestinationsResponse,
+  TravelerCategory,
 } from '../models/trip.models';
 
 function apiBase(): string {
@@ -68,5 +69,9 @@ export class TripApiService {
 
   estimate(body: unknown): Observable<EstimateResponse> {
     return this.http.post<EstimateResponse>(`${this.api}/trips/estimate`, body);
+  }
+
+  getTravelerCategories(): Observable<TravelerCategory[]> {
+    return this.http.get<TravelerCategory[]>(`${this.api}/traveler-categories`);
   }
 }

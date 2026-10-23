@@ -71,6 +71,8 @@ public sealed record DestinationDiscoveryDto(
     int DestinationId,
     string DestinationName,
     IReadOnlyList<PlaceCardDto> Hotels,
+    IReadOnlyList<PlaceCardDto> Apartments,
+    IReadOnlyList<PlaceCardDto> Homes,
     IReadOnlyList<PlaceCardDto> Restaurants,
     IReadOnlyList<PlaceCardDto> Attractions,
     IReadOnlyList<PlaceCardDto> Shopping,
@@ -134,6 +136,8 @@ public sealed class GetDestinationDiscoveryQueryHandler
             l.FetchedAtUtc);
 
         var hotels = listings.Where(l => l.ListingType == "Hotel").Take(12).Select(MapPlace).ToList();
+        var apartments = listings.Where(l => l.ListingType == "Apartment").Take(12).Select(MapPlace).ToList();
+        var homes = listings.Where(l => l.ListingType == "Home").Take(12).Select(MapPlace).ToList();
         var restaurants = listings.Where(l => l.ListingType == "Restaurant").Take(12).Select(MapPlace).ToList();
         var attractions = listings.Where(l => l.ListingType == "Attraction").Take(12).Select(MapPlace).ToList();
         var shopping = listings.Where(l => l.ListingType == "Shopping").Take(12).Select(MapPlace).ToList();
@@ -208,6 +212,8 @@ public sealed class GetDestinationDiscoveryQueryHandler
             dest.Id,
             dest.Name,
             hotels,
+            apartments,
+            homes,
             restaurants,
             attractions,
             shopping,

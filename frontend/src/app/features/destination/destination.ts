@@ -185,6 +185,22 @@ export class DestinationComponent implements OnInit {
       childAges: this.query()['childAges'],
       category: Number(this.query()['children'] || 0) > 0 ? 'Families' : 'Dating & Couples',
       priorities: Number(this.query()['children'] || 0) > 0 ? 'Family,Culture,Comfort' : 'Romance,Culture,Comfort',
+      mode: 'AiBudget',
+      budgetMode: 'Balanced',
+    };
+  }
+
+  planWizardLink(profile: DestinationProfile) {
+    return {
+      origin: this.query()['origin'],
+      destination: profile.name,
+      startDate: this.query()['startDate'],
+      endDate: this.query()['endDate'],
+      budget: this.query()['budget'],
+      adults: this.query()['adults'],
+      children: this.query()['children'],
+      childAges: this.query()['childAges'],
+      mode: 'Custom',
     };
   }
 }

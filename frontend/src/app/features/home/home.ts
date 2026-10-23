@@ -25,7 +25,13 @@ import {
   lucideNavigation,
 } from '@ng-icons/lucide';
 import { TripApiService } from '../../core/services/trip-api.service';
-import { Recommendation, TopDestinationCard, TopDestinationsResponse } from '../../core/models/trip.models';
+import {
+  PlanningMode,
+  Recommendation,
+  TopDestinationCard,
+  TopDestinationsResponse,
+  TravelerCategory,
+} from '../../core/models/trip.models';
 
 @Component({
   selector: 'app-home',
@@ -80,6 +86,10 @@ export class HomeComponent implements OnInit, AfterViewInit {
   partySummary = signal('');
   topDest = signal<TopDestinationsResponse | null>(null);
   topLoading = signal(true);
+  categories = signal<TravelerCategory[]>([]);
+  selectedCategory = signal<TravelerCategory | null>(null);
+  selectedSubcategoryCode = signal<string | null>(null);
+  planningMode = signal<PlanningMode>('AiBudget');
 
   readonly regions = [
     {
@@ -99,6 +109,47 @@ export class HomeComponent implements OnInit, AfterViewInit {
   ngOnInit(): void {
     this.detectLocation(false);
     this.loadTopDestinations();
+    this.api.getTravelerCategories().subscribe({
+      next: (cats) => {
+        this.categories.set(cats);
+        const initial =
+          cats.find((c) => c.code === 'COUPLES') ?? cats[0] ?? null;
+        if (initial) {
+          this.selectedCategory.set(initial);
+          this.selectedSubcategoryCode.set(initial.subcategories[0]?.code ?? null);
+        }
+      },
+    });
+  }
+
+  selectCategory(cat: TravelerCategory): void {
+    this.selectedCategory.set(cat);
+    this.selectedSubcategoryCode.set(cat.subcategories[0]?.code ?? null);
+    if (cat.code === 'FAMILIES' && this.children === 0) {
+      this.children = 1;
+      this.syncChildren();
+    }
+  }
+
+  startWizard(): void {
+    const cat = this.selectedCategory();
+    void this.router.navigate(['/plan'], {
+      queryParams: {
+        origin: this.origin,
+        destination: this.destination || undefined,
+        startDate: this.startDate,
+        endDate: this.endDate,
+        budget: this.budget,
+        adults: this.adults,
+        children: this.children,
+        childAges: this.childAges.join(','),
+        category: cat?.name,
+        categoryCode: cat?.code,
+        subcategory: this.selectedSubcategoryCode() ?? undefined,
+        priorities: this.priorities,
+        mode: this.planningMode(),
+      },
+    });
   }
 
   ngAfterViewInit(): void {
@@ -193,7 +244,12 @@ export class HomeComponent implements OnInit, AfterViewInit {
     this.syncChildren();
     this.loading.set(true);
     this.error.set(null);
-    const travelerCategory = this.children > 0 ? 'Families' : 'Dating & Couples';
+    const cat = this.selectedCategory();
+    const travelerCategory =
+      cat?.name ?? (this.children > 0 ? 'Families' : 'Dating & Couples');
+    const subcategory =
+      this.selectedSubcategoryCode() ??
+      (this.children > 0 ? 'YoungKids' : 'FirstTripTogether');
     this.api
       .recommend({
         origin: this.origin,
@@ -205,7 +261,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
         budget: this.budget,
         currency: 'USD',
         travelerCategory,
-        subcategory: this.children > 0 ? 'YoungKids' : 'FirstTripTogether',
+        subcategory,
         priorities: this.priorities.split(',').map((p) => p.trim()).filter(Boolean),
       })
       .subscribe({
@@ -258,6 +314,7 @@ export class HomeComponent implements OnInit, AfterViewInit {
   }
 
   openEstimate(rec: Recommendation): void {
+    const cat = this.selectedCategory();
     void this.router.navigate(['/results'], {
       queryParams: {
         origin: this.originLabel(),
@@ -268,8 +325,32 @@ export class HomeComponent implements OnInit, AfterViewInit {
         adults: this.adults,
         children: this.children,
         childAges: this.childAges.join(','),
-        category: this.children > 0 ? 'Families' : 'Dating & Couples',
+        category: cat?.name ?? (this.children > 0 ? 'Families' : 'Dating & Couples'),
+        subcategory: this.selectedSubcategoryCode() ?? undefined,
         priorities: this.priorities,
+        mode: this.planningMode(),
+        budgetMode: this.planningMode() === 'AiBudget' ? 'Budget' : 'Balanced',
+      },
+    });
+  }
+
+  openWizardFor(rec: Recommendation): void {
+    const cat = this.selectedCategory();
+    void this.router.navigate(['/plan'], {
+      queryParams: {
+        origin: this.originLabel(),
+        destination: rec.destination,
+        startDate: this.startDate,
+        endDate: this.endDate,
+        budget: this.budget,
+        adults: this.adults,
+        children: this.children,
+        childAges: this.childAges.join(','),
+        category: cat?.name,
+        categoryCode: cat?.code,
+        subcategory: this.selectedSubcategoryCode() ?? undefined,
+        priorities: this.priorities,
+        mode: this.planningMode(),
       },
     });
   }

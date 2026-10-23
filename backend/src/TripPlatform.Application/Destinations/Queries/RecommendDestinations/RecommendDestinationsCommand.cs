@@ -162,7 +162,7 @@ public sealed class RecommendDestinationsCommandHandler
             total.Max = Math.Round(total.Max * (1 + profile.ContingencyPercent / 100m), 2);
 
             var fit = ComputeBudgetFit(total.Typical, request.Budget);
-            var score = ScoreDestination(dest, pop, fit, priorities, category, children > 0, hasYoungKids, hasTeens, option);
+            var score = ScoreDestination(dest, pop, fit, priorities, category, request.Subcategory, children > 0, hasYoungKids, hasTeens, option);
             var reasons = BuildReasons(dest, season, fit, priorities, category, option, children, hasYoungKids);
             var highlights = dest.Attractions
                 .Where(a => a.IsActive)
@@ -307,6 +307,7 @@ public sealed class RecommendDestinationsCommandHandler
         BudgetFit fit,
         HashSet<string> priorities,
         string category,
+        string? subcategory,
         bool hasChildren,
         bool hasYoungKids,
         bool hasTeens,
@@ -344,6 +345,25 @@ public sealed class RecommendDestinationsCommandHandler
 
         if (category.Contains("Solo", StringComparison.OrdinalIgnoreCase))
             score += dest.SoloScore;
+
+        if (category.Contains("Friend", StringComparison.OrdinalIgnoreCase) ||
+            category.Contains("Bachelor", StringComparison.OrdinalIgnoreCase))
+            score += dest.AdventureScore / 2 + dest.SoloScore / 2;
+
+        // Subcategory nudges (seeded codes like HONEYMOON, YOUNG_KIDS, BACKPACKER)
+        if (!string.IsNullOrWhiteSpace(subcategory))
+        {
+            var sub = subcategory.Replace("_", "", StringComparison.OrdinalIgnoreCase);
+            if (sub.Contains("HONEYMOON", StringComparison.OrdinalIgnoreCase) ||
+                sub.Contains("PROPOSAL", StringComparison.OrdinalIgnoreCase))
+                score += dest.RomanceScore / 2 + dest.LuxuryScore / 3;
+            if (sub.Contains("YOUNGKIDS", StringComparison.OrdinalIgnoreCase))
+                score += dest.FamilyFriendlyScore / 2;
+            if (sub.Contains("BACKPACKER", StringComparison.OrdinalIgnoreCase))
+                score += dest.BudgetScore;
+            if (sub.Contains("BACHELOR", StringComparison.OrdinalIgnoreCase))
+                score += dest.AdventureScore / 2;
+        }
 
         score += Math.Max(0, 30 - option.DurationMinutes / 20);
         return score;

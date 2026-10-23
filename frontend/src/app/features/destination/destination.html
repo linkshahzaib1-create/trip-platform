@@ -14,13 +14,22 @@
       <span>{{ error() }}</span>
     </div>
   } @else if (profile(); as p) {
-    <div class="h-44 sm:h-56 rounded-xl bg-gradient-to-br from-sky-200 via-orange-100 to-emerald-100 mb-0 flex items-end p-6">
-      <div>
-        <p class="text-sm uppercase tracking-wide text-muted flex items-center gap-1">
+    <div
+      class="h-44 sm:h-56 rounded-xl mb-0 flex items-end p-6 bg-cover bg-center relative overflow-hidden"
+      [style.background-image]="p.heroImageUrl ? 'url(' + p.heroImageUrl + ')' : null"
+      [class.bg-gradient-to-br]="!p.heroImageUrl"
+      [class.from-sky-200]="!p.heroImageUrl"
+      [class.via-orange-100]="!p.heroImageUrl"
+      [class.to-emerald-100]="!p.heroImageUrl"
+    >
+      <div class="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent"></div>
+      <div class="relative">
+        <p class="text-sm uppercase tracking-wide text-white/80 flex items-center gap-1">
           <ng-icon name="lucideMapPin" size="14"></ng-icon>
           {{ p.country }}@if (p.region) { · {{ p.region }} }
         </p>
-        <h1 class="text-3xl sm:text-4xl font-bold text-ink">{{ p.name }}</h1>
+        <h1 class="text-3xl sm:text-4xl font-bold text-white">{{ p.name }}</h1>
+        <p class="text-xs text-white/80 mt-1">Estimated open-data pricing · not live booking inventory</p>
       </div>
     </div>
 
@@ -275,6 +284,7 @@
               <h3 class="font-bold mb-3 flex items-center gap-2">
                 <ng-icon name="lucidePlane" size="18" class="text-brand"></ng-icon>
                 Flights
+                <span class="badge badge-ghost badge-sm font-normal">Estimated</span>
               </h3>
               <div class="space-y-3">
                 @for (f of discovery()?.flights ?? []; track f.id) {
@@ -393,13 +403,15 @@
         @if (activeTab() === 'photos') {
           <section class="bg-white border border-base-300 rounded-xl p-5 sm:p-7">
             <h2 class="text-xl font-bold mb-3">Photos</h2>
+            <p class="text-xs text-muted mb-3">Authentic Wikimedia Commons images for this destination.</p>
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-sky-300 to-blue-200"></div>
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-orange-200 to-amber-100"></div>
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-emerald-200 to-teal-100"></div>
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-rose-200 to-pink-100"></div>
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-violet-200 to-indigo-100"></div>
-              <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-slate-300 to-stone-200"></div>
+              @for (photo of p.photos; track photo) {
+                <img [src]="photo" [alt]="p.name" class="aspect-[4/3] rounded-lg object-cover w-full bg-panel" loading="lazy" />
+              } @empty {
+                <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-sky-300 to-blue-200"></div>
+                <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-orange-200 to-amber-100"></div>
+                <div class="aspect-[4/3] rounded-lg bg-gradient-to-br from-emerald-200 to-teal-100"></div>
+              }
             </div>
           </section>
         }
@@ -440,6 +452,13 @@
             [queryParams]="estimateLink(p)"
           >
             Get trip estimate
+          </a>
+          <a
+            class="btn w-full mt-2 btn-outline"
+            [routerLink]="['/plan']"
+            [queryParams]="planWizardLink(p)"
+          >
+            Customize in wizard
           </a>
         </div>
       </aside>

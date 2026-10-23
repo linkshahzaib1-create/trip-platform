@@ -1,0 +1,294 @@
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+  <a routerLink="/" class="inline-flex items-center gap-2 text-sm font-medium text-brand mb-4">
+    <ng-icon name="lucideArrowLeft" size="16"></ng-icon>
+    Back home
+  </a>
+
+  <div class="mb-6">
+    <p class="text-sm text-brand font-medium flex items-center gap-2">
+      <ng-icon name="lucideSparkles" size="16"></ng-icon>
+      Build trip cost in a few clicks
+    </p>
+    <h1 class="text-2xl sm:text-3xl font-bold text-ink mt-1">{{ stepLabel() }}</h1>
+    <p class="text-sm text-muted mt-1">Step {{ step() }} of 7 — major expenses first, then details.</p>
+    <progress class="progress progress-warning w-full mt-3 h-2" [value]="step()" max="7"></progress>
+  </div>
+
+  @if (error()) {
+    <div role="alert" class="alert alert-error mb-4">
+      <ng-icon name="lucideCircleAlert" size="20"></ng-icon>
+      <span>{{ error() }}</span>
+    </div>
+  }
+
+  <div class="bg-white border border-base-300 rounded-xl p-5 sm:p-7 shadow-sm">
+    @if (step() === 1) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="form-control">
+          <span class="label-text font-medium">From</span>
+          <input class="input input-bordered" [(ngModel)]="origin" name="origin" />
+        </label>
+        <label class="form-control">
+          <span class="label-text font-medium">To</span>
+          <input class="input input-bordered" [(ngModel)]="destination" name="destination" />
+        </label>
+        <label class="form-control">
+          <span class="label-text font-medium">Start</span>
+          <input class="input input-bordered" type="date" [(ngModel)]="startDate" name="startDate" />
+        </label>
+        <label class="form-control">
+          <span class="label-text font-medium">End</span>
+          <input class="input input-bordered" type="date" [(ngModel)]="endDate" name="endDate" />
+        </label>
+        <label class="form-control sm:col-span-2">
+          <span class="label-text font-medium flex items-center gap-1">
+            <ng-icon name="lucideWallet" size="14"></ng-icon>
+            Total budget (USD)
+          </span>
+          <input class="input input-bordered" type="number" min="1" [(ngModel)]="budget" name="budget" />
+        </label>
+        <div class="sm:col-span-2 grid grid-cols-2 gap-4">
+          <label class="form-control">
+            <span class="label-text">Adults</span>
+            <input class="input input-bordered" type="number" min="1" max="12" [(ngModel)]="adults" name="adults" />
+          </label>
+          <label class="form-control">
+            <span class="label-text">Children</span>
+            <input
+              class="input input-bordered"
+              type="number"
+              min="0"
+              max="8"
+              [(ngModel)]="children"
+              (ngModelChange)="syncChildren()"
+              name="children"
+            />
+          </label>
+        </div>
+      </div>
+    }
+
+    @if (step() === 2) {
+      <p class="text-sm text-muted mb-4 flex items-center gap-2">
+        <ng-icon name="lucideUsers" size="16"></ng-icon>
+        Pick who you are traveling as — drives recommendations and pacing.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @for (cat of categories(); track cat.id) {
+          <button
+            type="button"
+            class="text-left rounded-xl border p-4 transition"
+            [class.border-brand]="selectedCategory()?.id === cat.id"
+            [class.bg-orange-50]="selectedCategory()?.id === cat.id"
+            [class.border-base-300]="selectedCategory()?.id !== cat.id"
+            (click)="selectCategory(cat)"
+          >
+            <p class="font-semibold text-ink">{{ cat.name }}</p>
+            <p class="text-xs text-muted mt-1">{{ cat.subcategories.length }} sub-options</p>
+          </button>
+        }
+      </div>
+      @if (selectedCategory(); as cat) {
+        <div class="mt-4">
+          <p class="text-sm font-medium mb-2">Subcategory</p>
+          <div class="flex flex-wrap gap-2">
+            @for (sub of cat.subcategories; track sub.id) {
+              <button
+                type="button"
+                class="btn btn-sm"
+                [class.btn-warning]="selectedSubcategoryCode() === sub.code"
+                [class.btn-outline]="selectedSubcategoryCode() !== sub.code"
+                (click)="selectedSubcategoryCode.set(sub.code)"
+              >
+                {{ sub.name }}
+              </button>
+            }
+          </div>
+        </div>
+      }
+    }
+
+    @if (step() === 3) {
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <button
+          type="button"
+          class="text-left rounded-xl border p-5 transition"
+          [class.border-brand]="planningMode() === 'AiBudget'"
+          [class.bg-orange-50]="planningMode() === 'AiBudget'"
+          (click)="planningMode.set('AiBudget')"
+        >
+          <p class="font-bold text-ink">AI-Powered Budget Mode</p>
+          <p class="text-sm text-muted mt-2">
+            Enter your total budget — we curate flights, stays, and activities to fit.
+          </p>
+        </button>
+        <button
+          type="button"
+          class="text-left rounded-xl border p-5 transition"
+          [class.border-brand]="planningMode() === 'Custom'"
+          [class.bg-orange-50]="planningMode() === 'Custom'"
+          (click)="planningMode.set('Custom')"
+        >
+          <p class="font-bold text-ink">Custom Requirements Mode</p>
+          <p class="text-sm text-muted mt-2">
+            Manually pick airlines/fares, stay type, and activities — then we estimate.
+          </p>
+        </button>
+      </div>
+    }
+
+    @if (step() === 4) {
+      @if (loading()) {
+        <div class="flex justify-center py-10"><span class="loading loading-spinner text-brand"></span></div>
+      } @else {
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+          <p class="font-medium flex items-center gap-2">
+            <ng-icon name="lucidePlane" size="18" class="text-brand"></ng-icon>
+            Flight options (estimated)
+          </p>
+          <a class="link link-hover text-sm text-brand" [href]="liveFlightUrl()" target="_blank" rel="noopener">Check live price</a>
+        </div>
+        <p class="text-xs text-muted mb-3">Cached route estimates — not live airline inventory.</p>
+        <div class="space-y-3">
+          @for (f of discovery()?.flights ?? []; track f.id) {
+            <button
+              type="button"
+              class="w-full text-left rounded-lg border p-4"
+              [class.border-brand]="selectedFlightId() === f.id"
+              [class.bg-orange-50]="selectedFlightId() === f.id"
+              (click)="pickFlight(f)"
+            >
+              <p class="font-medium">{{ f.from }} → {{ f.to }}</p>
+              <p class="text-xs text-muted">{{ f.airline }} · {{ f.cabinClass }} · {{ f.scheduleNotes }}</p>
+              <p class="text-sm font-semibold text-brand mt-1">
+                ${{ f.priceMin | number: '1.0-0' }}–${{ f.priceMax | number: '1.0-0' }}
+              </p>
+              @if (f.baggageNotes) {
+                <p class="text-xs text-muted mt-1">{{ f.baggageNotes }}</p>
+              }
+            </button>
+          } @empty {
+            <p class="text-sm text-muted">No flight quotes cached for this pair — estimate will use default route costs.</p>
+          }
+        </div>
+      }
+    }
+
+    @if (step() === 5) {
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <p class="font-medium flex items-center gap-2">
+          <ng-icon name="lucideBedDouble" size="18" class="text-brand"></ng-icon>
+          Accommodation
+        </p>
+        <a class="link link-hover text-sm text-brand" [href]="liveStayUrl()" target="_blank" rel="noopener">Check live price</a>
+      </div>
+      <div class="flex flex-wrap gap-2 mb-4">
+        @for (t of ['Hotel', 'Apartment', 'Home']; track t) {
+          <button
+            type="button"
+            class="btn btn-sm"
+            [class.btn-warning]="stayType() === t"
+            [class.btn-outline]="stayType() !== t"
+            (click)="onStayTypeChange($any(t))"
+          >
+            {{ t }}
+          </button>
+        }
+      </div>
+      <div class="space-y-3">
+        @for (p of stayOptions(); track p.id) {
+          <button
+            type="button"
+            class="w-full text-left rounded-lg border p-4 flex gap-3"
+            [class.border-brand]="selectedListingId() === p.id"
+            [class.bg-orange-50]="selectedListingId() === p.id"
+            (click)="pickStay(p)"
+          >
+            @if (p.imageUrl) {
+              <img [src]="p.imageUrl" [alt]="p.name" class="w-20 h-16 object-cover rounded-md shrink-0" />
+            }
+            <div>
+              <p class="font-medium">{{ p.name }}</p>
+              <p class="text-xs text-muted">{{ p.listingType }} · {{ p.amenities || 'Amenities vary' }}</p>
+              @if (p.priceTypical != null) {
+                <p class="text-sm font-semibold text-brand mt-1">${{ p.priceTypical | number: '1.0-0' }}/night</p>
+              }
+            </div>
+          </button>
+        } @empty {
+          <p class="text-sm text-muted">No {{ stayType() }} listings yet — profile nightly rates will be used.</p>
+        }
+      </div>
+    }
+
+    @if (step() === 6) {
+      <p class="font-medium mb-2 flex items-center gap-2">
+        <ng-icon name="lucideTicket" size="18" class="text-brand"></ng-icon>
+        Activities
+      </p>
+      <p class="text-sm text-muted mb-4">
+        @if (planningMode() === 'AiBudget') {
+          Pre-selected budget-friendly picks — adjust as you like.
+        } @else {
+          Select the experiences you want included in your estimate.
+        }
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        @for (a of discovery()?.activities ?? []; track a.id) {
+          <button
+            type="button"
+            class="text-left rounded-lg border p-4"
+            [class.border-brand]="isActivitySelected(a.id)"
+            [class.bg-orange-50]="isActivitySelected(a.id)"
+            (click)="toggleActivity(a)"
+          >
+            <div class="flex justify-between gap-2">
+              <p class="font-medium">{{ a.name }}</p>
+              @if (isActivitySelected(a.id)) {
+                <ng-icon name="lucideCheck" size="16" class="text-ok shrink-0"></ng-icon>
+              }
+            </div>
+            <p class="text-xs text-muted">{{ a.category }} · {{ a.durationMinutes }} min</p>
+            <p class="text-sm text-brand font-semibold mt-1">${{ a.costTypical | number: '1.0-0' }}</p>
+          </button>
+        } @empty {
+          <p class="text-sm text-muted">Activities will use destination defaults.</p>
+        }
+      </div>
+    }
+
+    @if (step() === 7) {
+      <div class="space-y-3 text-sm">
+        <p><span class="text-muted">Route:</span> <strong>{{ origin }} → {{ destination }}</strong></p>
+        <p><span class="text-muted">Dates:</span> {{ startDate }} → {{ endDate }}</p>
+        <p><span class="text-muted">Budget:</span> ${{ budget | number: '1.0-0' }}</p>
+        <p><span class="text-muted">Travelers:</span> {{ adults }} adult(s), {{ children }} child(ren)</p>
+        <p><span class="text-muted">Category:</span> {{ selectedCategory()?.name }} / {{ selectedSubcategoryCode() }}</p>
+        <p><span class="text-muted">Mode:</span> {{ planningMode() === 'AiBudget' ? 'AI Budget' : 'Custom' }}</p>
+        <p><span class="text-muted">Stay:</span> {{ stayType() }}</p>
+        <p><span class="text-muted">Activities selected:</span> {{ selectedActivityIds().length }}</p>
+        <p class="text-muted text-xs pt-2">Next click runs the estimate with your selections — typically the 7th–8th click in this flow.</p>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-between gap-3 mt-6">
+    <button type="button" class="btn btn-outline" [disabled]="step() === 1 || loading()" (click)="back()">
+      Back
+    </button>
+    @if (step() < 7) {
+      <button type="button" class="btn border-0 text-white bg-brand hover:bg-brand-dark gap-1" [disabled]="loading()" (click)="next()">
+        @if (loading()) {
+          <span class="loading loading-spinner loading-sm"></span>
+        }
+        Continue
+        <ng-icon name="lucideArrowRight" size="16"></ng-icon>
+      </button>
+    } @else {
+      <button type="button" class="btn border-0 text-white bg-brand hover:bg-brand-dark gap-1" (click)="finish()">
+        Get trip estimate
+        <ng-icon name="lucideArrowRight" size="16"></ng-icon>
+      </button>
+    }
+  </div>
+</div>

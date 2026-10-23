@@ -11,13 +11,13 @@
         <ul class="menu menu-horizontal px-1 text-sm">
           <li><a href="#plan" routerLinkActive="text-brand" (click)="planTrip($event)">Destinations</a></li>
           <li><a href="#top-destinations" (click)="goToSection($event, 'top-destinations')">Popular trips</a></li>
+          <li><a routerLink="/plan" routerLinkActive="text-brand">Trip wizard</a></li>
         </ul>
       </div>
       <div class="navbar-end">
         <a
-          href="#plan"
+          routerLink="/plan"
           class="btn btn-sm sm:btn-md border-0 text-white bg-brand hover:bg-brand-dark"
-          (click)="planTrip($event)"
         >
           Plan a trip
         </a>

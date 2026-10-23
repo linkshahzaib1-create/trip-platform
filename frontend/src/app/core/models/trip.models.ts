@@ -102,7 +102,24 @@ export interface DestinationProfile {
   activities: DestinationActivity[];
   inclusions: DestinationInclusions;
   sampleItinerary: string[];
+  photos: string[];
+  heroImageUrl?: string | null;
 }
+
+export interface TravelerSubcategory {
+  id: number;
+  name: string;
+  code: string;
+}
+
+export interface TravelerCategory {
+  id: number;
+  name: string;
+  code: string;
+  subcategories: TravelerSubcategory[];
+}
+
+export type PlanningMode = 'AiBudget' | 'Custom';
 
 export interface TopDestinationCard {
   id: number;
@@ -177,6 +194,8 @@ export interface DestinationDiscovery {
   destinationId: number;
   destinationName: string;
   hotels: PlaceCard[];
+  apartments: PlaceCard[];
+  homes: PlaceCard[];
   restaurants: PlaceCard[];
   attractions: PlaceCard[];
   shopping: PlaceCard[];
@@ -231,4 +250,5 @@ export interface EstimateResponse {
   itinerary: ItineraryItem[];
   assumptions: string[];
   reasons: string[];
+  planningMode?: string | null;
 }

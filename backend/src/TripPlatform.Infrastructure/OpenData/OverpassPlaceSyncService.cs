@@ -4,6 +4,7 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using TripPlatform.Application.Common;
 using TripPlatform.Application.Common.Interfaces;
 using TripPlatform.Domain.Entities;
 using TripPlatform.Infrastructure.Persistence;
@@ -103,6 +104,7 @@ public sealed class OverpassPlaceSyncService : IPlaceSyncService
 
                 var (min, typical, max) = EstimatePrice(listingType, profile, el.Tags);
                 var amenities = BuildAmenities(el.Tags);
+                var hero = DestinationMediaCatalog.HeroFor(dest.Slug);
 
                 if (existing is null)
                 {
@@ -121,12 +123,12 @@ public sealed class OverpassPlaceSyncService : IPlaceSyncService
                         Currency = "USD",
                         Rating = EstimateRating(el.Tags),
                         ReviewCount = 0,
-                        StarRating = listingType == "Hotel" ? EstimateStars(el.Tags) : null,
+                        StarRating = listingType is "Hotel" or "Apartment" or "Home" ? EstimateStars(el.Tags) : null,
                         AmenitiesCsv = amenities,
                         Cuisine = el.Tags.Cuisine,
-                        FamilyFriendly = listingType is "Hotel" or "Attraction" or "Restaurant",
+                        FamilyFriendly = listingType is "Hotel" or "Apartment" or "Home" or "Attraction" or "Restaurant",
                         ChildFriendly = listingType is "Attraction" or "Restaurant",
-                        ImageUrl = null,
+                        ImageUrl = listingType is "Hotel" or "Apartment" or "Home" or "Attraction" ? hero : null,
                         PopularityScore = PopularityFromTags(el.Tags),
                         ExternalId = externalId,
                         Source = "OpenStreetMap",
@@ -291,6 +293,8 @@ public sealed class OverpassPlaceSyncService : IPlaceSyncService
             (
               node["tourism"="hotel"](around:{radiusMeters},{latS},{lngS});
               node["tourism"="guest_house"](around:{radiusMeters},{latS},{lngS});
+              node["tourism"="apartment"](around:{radiusMeters},{latS},{lngS});
+              node["tourism"="chalet"](around:{radiusMeters},{latS},{lngS});
               node["amenity"="restaurant"](around:{radiusMeters},{latS},{lngS});
               node["amenity"="cafe"](around:{radiusMeters},{latS},{lngS});
               node["amenity"="fast_food"](around:{radiusMeters},{latS},{lngS});
@@ -309,6 +313,10 @@ public sealed class OverpassPlaceSyncService : IPlaceSyncService
 
     private static string? MapListingType(OsmTags tags)
     {
+        if (tags.Tourism is "apartment")
+            return "Apartment";
+        if (tags.Tourism is "chalet")
+            return "Home";
         if (tags.Tourism is "hotel" or "guest_house" or "hostel")
             return "Hotel";
         if (tags.Amenity is "restaurant" or "cafe" or "fast_food" || !string.IsNullOrWhiteSpace(tags.Cuisine))
@@ -333,6 +341,14 @@ public sealed class OverpassPlaceSyncService : IPlaceSyncService
                 profile?.AccommodationMin ?? 40,
                 profile?.AccommodationTypical ?? 75,
                 profile?.AccommodationMax ?? 140),
+            "Apartment" => (
+                Math.Round((profile?.AccommodationMin ?? 40) * 0.85m, 2),
+                Math.Round((profile?.AccommodationTypical ?? 75) * 0.85m, 2),
+                Math.Round((profile?.AccommodationMax ?? 140) * 0.9m, 2)),
+            "Home" => (
+                Math.Round((profile?.AccommodationMin ?? 40) * 0.75m, 2),
+                Math.Round((profile?.AccommodationTypical ?? 75) * 0.75m, 2),
+                Math.Round((profile?.AccommodationMax ?? 140) * 0.85m, 2)),
             "Restaurant" => (
                 Math.Round((profile?.FoodMin ?? 8) * 0.8m, 2),
                 profile?.FoodTypical ?? 15,

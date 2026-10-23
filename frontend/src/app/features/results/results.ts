@@ -50,6 +50,15 @@ export class ResultsComponent implements OnInit {
       ...Array.from({ length: Math.max(1, adults) }, () => ({ age: 30 })),
       ...childAges.map((age) => ({ age })),
     ];
+    const activityIds = (q.get('activityIds') ?? '')
+      .split(',')
+      .map((x) => Number(x.trim()))
+      .filter((n) => !Number.isNaN(n) && n > 0);
+    const flightQuoteId = Number(q.get('flightQuoteId') ?? '');
+    const listingId = Number(q.get('listingId') ?? '');
+    const mode = q.get('mode');
+    const planningMode = mode === 'AiBudget' || mode === 'Custom' ? mode : null;
+
     this.api
       .estimate({
         origin: q.get('origin') ?? 'Lahore',
@@ -61,8 +70,16 @@ export class ResultsComponent implements OnInit {
         currency: 'USD',
         travelerCategory: q.get('category') ?? (childAges.length ? 'Families' : 'Dating & Couples'),
         subcategory: q.get('subcategory') ?? (childAges.length ? 'YoungKids' : 'FirstTripTogether'),
-        priorities: (q.get('priorities') ?? (childAges.length ? 'Family,Culture,Comfort' : 'Romance,Culture')).split(',').map((p) => p.trim()),
-        budgetMode: 'Balanced',
+        priorities: (q.get('priorities') ?? (childAges.length ? 'Family,Culture,Comfort' : 'Romance,Culture'))
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean),
+        budgetMode: q.get('budgetMode') ?? 'Balanced',
+        planningMode,
+        stayType: q.get('stayType') || 'Hotel',
+        selectedFlightQuoteId: Number.isFinite(flightQuoteId) && flightQuoteId > 0 ? flightQuoteId : null,
+        selectedListingId: Number.isFinite(listingId) && listingId > 0 ? listingId : null,
+        selectedActivityIds: activityIds.length ? activityIds : null,
       })
       .subscribe({
         next: (res) => {
@@ -70,7 +87,7 @@ export class ResultsComponent implements OnInit {
           this.loading.set(false);
         },
         error: (err) => {
-          this.error.set(err?.message ?? 'Estimate failed');
+          this.error.set(err?.error?.title ?? err?.message ?? 'Estimate failed');
           this.loading.set(false);
         },
       });
