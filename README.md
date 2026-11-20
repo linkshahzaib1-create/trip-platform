@@ -51,21 +51,27 @@ See [database/README.md](database/README.md). Run scripts `001` → `006` in ord
 
 ## Live deployment
 
-Cursor does **not** provide public domains or app hosting. Deploy on **Render** (free web + free Postgres) via Blueprint [`render.yaml`](render.yaml): Angular SPA + .NET API in one Docker image, PostgreSQL attached as `DATABASE_URL`.
+Cursor does **not** provide public domains or app hosting. The app is one Docker image (Angular SPA + .NET API).
 
 **GitHub:** https://github.com/linkshahzaib1-create/trip-platform  
 
-### Deploy on Render (free)
+### Recommended: Hostless (no credit card)
 
-1. Sign up / sign in at [dashboard.render.com](https://dashboard.render.com) (GitHub login recommended). New accounts may need a card for a **$1 identity check** (not a charge).
-2. **New → Blueprint** → select `linkshahzaib1-create/trip-platform` (branch `main`).
-3. Apply the Blueprint. Render builds the Dockerfile and provisions free Postgres.
-4. Open `https://<service>.onrender.com/health` after the first deploy.
+[Hostless](https://hostless.cloud) free allowance: Docker apps + managed Postgres, no card, no cold starts.
 
-Notes: free web services **spin down** after ~15 minutes idle (cold start ~1 minute). Free Postgres expires after **30 days** unless upgraded.
+1. Sign up with GitHub at [hostless.cloud/auth/register](https://hostless.cloud/auth/register).
+2. Create a project → **New App** → connect `linkshahzaib1-create/trip-platform` (`main`). Hostless builds the root `Dockerfile`.
+3. Set env: `ASPNETCORE_ENVIRONMENT=Production`, `Database__Provider=InMemory` (or add a free Hostless Postgres and set `Database__Provider=PostgreSQL` + `DATABASE_URL`).
+4. Deploy and open `https://<app>.hostless.app/health`.
 
-- Health: `https://<service>.onrender.com/health`
-- Swagger: `https://<service>.onrender.com/swagger`
+### Why not Zeabur / Surge / Coolify (without a card)
+
+| Option | Fit for this app |
+|--------|------------------|
+| **Surge.sh** | Static sites only — cannot run the .NET API. |
+| **Zeabur** | Shared cluster closed to new projects; free plan manages a **server you already own**. |
+| **Coolify** | Free software, but needs a Linux VPS (usually paid / card-gated). Use [`database/docker-compose.yml`](database/docker-compose.yml) + root `Dockerfile` if you have a server. |
+| **Render** | Works with Docker + Postgres Blueprint ([`render.yaml`](render.yaml)), but new accounts require card verification. |
 
 ### Product flow (Tripsite-inspired)
 1. Enter origin, dates, budget  
