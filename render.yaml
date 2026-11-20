@@ -1,3 +1,11 @@
+# TripPlatform Blueprint — free web (Docker) + free Postgres
+# Deploy: Render Dashboard → New → Blueprint → select this repo
+databases:
+  - name: trip-platform-db
+    plan: free
+    databaseName: tripplatform
+    user: trip
+
 services:
   - type: web
     name: trip-platform
@@ -10,4 +18,8 @@ services:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
       - key: Database__Provider
-        value: InMemory
+        value: PostgreSQL
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trip-platform-db
+          property: connectionString
