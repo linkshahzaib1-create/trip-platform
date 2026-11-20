@@ -51,13 +51,21 @@ See [database/README.md](database/README.md). Run scripts `001` → `006` in ord
 
 ## Live deployment
 
-**Public app:** https://trip-platform-production.up.railway.app  
+Cursor does **not** provide public domains or app hosting. Deploy on **Render** (free web + free Postgres) via Blueprint [`render.yaml`](render.yaml): Angular SPA + .NET API in one Docker image, PostgreSQL attached as `DATABASE_URL`.
 
-Cursor does **not** provide public domains or app hosting. This app is deployed on **Railway** (Angular SPA + .NET API + **PostgreSQL**).
+**GitHub:** https://github.com/linkshahzaib1-create/trip-platform  
 
-- Health: https://trip-platform-production.up.railway.app/health  
-- Swagger: https://trip-platform-production.up.railway.app/swagger  
-- GitHub: https://github.com/linkshahzaib1-create/trip-platform  
+### Deploy on Render (free)
+
+1. Sign up / sign in at [dashboard.render.com](https://dashboard.render.com) (GitHub login recommended). New accounts may need a card for a **$1 identity check** (not a charge).
+2. **New → Blueprint** → select `linkshahzaib1-create/trip-platform` (branch `main`).
+3. Apply the Blueprint. Render builds the Dockerfile and provisions free Postgres.
+4. Open `https://<service>.onrender.com/health` after the first deploy.
+
+Notes: free web services **spin down** after ~15 minutes idle (cold start ~1 minute). Free Postgres expires after **30 days** unless upgraded.
+
+- Health: `https://<service>.onrender.com/health`
+- Swagger: `https://<service>.onrender.com/swagger`
 
 ### Product flow (Tripsite-inspired)
 1. Enter origin, dates, budget  

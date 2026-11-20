@@ -29,9 +29,9 @@ API `appsettings.Development.json`:
 
 On first API start, EF Core `EnsureCreated` + `DemoDataSeeder` create tables and Lahore-centric seed data.
 
-## Railway
+## Render (production)
 
-Production uses Railway Postgres. The web service is configured with:
+Production uses Render Postgres via Blueprint [`render.yaml`](../render.yaml). The web service is configured with:
 
 - `Database__Provider=PostgreSQL`
-- `DATABASE_URL` / `ConnectionStrings__DefaultConnection` pointing at the Postgres service
+- `DATABASE_URL` from the Blueprint `fromDatabase` connection string (Npgsql URI is normalized in `DependencyInjection.cs`)
